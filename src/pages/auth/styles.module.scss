@@ -1,0 +1,27 @@
+.container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  .close {
+    position: absolute;
+    right: 30px;
+    top: 30px;
+    cursor: pointer;
+  }
+  .authToggle {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    font-size: 18px;
+    font-weight: 500;
+    width: 350px;
+    line-height: 1.6;
+    div {
+      cursor: pointer;
+    }
+  }
+}

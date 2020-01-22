@@ -1,0 +1,39 @@
+.container {
+  width: 100vw;
+  height: 80px;
+  padding: 0 15px;
+  background: #1E1E1E;
+  .content {
+    margin: 0 auto;
+    height: 100%;
+    max-width: 1070px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    .logo {
+      font-size: 36px;
+      color: #D9D9A8;
+      span {
+        color: #4EC9B0;
+        &:last-child {
+          color: #D0D0D0;
+        }
+      }
+    }
+  }
+  .navs {
+    display: inline;
+    a {
+      color: #CA8E76;
+      &::before {
+        content: "'";
+      }
+      &::after {
+        content: "', ";
+      }
+      &:last-child::after {
+        content: "'";
+      }
+    }
+  }
+}
