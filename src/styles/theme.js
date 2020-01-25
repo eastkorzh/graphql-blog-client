@@ -1,4 +1,4 @@
-import { createTheme, darkThemePrimitives, lightThemePrimitives, DarkTheme } from 'baseui';
+import { createTheme, darkThemePrimitives, DarkTheme } from 'baseui';
 
 const primitives = {
   ...darkThemePrimitives,

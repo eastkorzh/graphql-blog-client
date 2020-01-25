@@ -1,0 +1,25 @@
+.aboutUser {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  .collapsed {
+    display: flex;
+    align-items: center;
+    .name {
+      margin-right: 10px;
+    }
+  }
+  &:hover {
+    .expendedInfo {
+      position: absolute;
+      top: -10px;
+      left: -15px;
+      background: #353535;
+      padding: 10px 15px;
+      border-radius: 5px;
+      .collapsed ~ div {
+        line-height: 30px;
+      }
+    }
+  }
+}

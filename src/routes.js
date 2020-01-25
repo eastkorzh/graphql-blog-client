@@ -1,5 +1,6 @@
 import Home from 'pages/home';
 import Auth from 'pages/auth';
+import File from 'pages/file';
 
 const routes = [
   {
@@ -12,6 +13,12 @@ const routes = [
     exact: true,
     component: Auth
   },
+  {
+    path: '/file',
+    exact: true,
+    component: File
+  },
+  
 ]
 
 export default routes;

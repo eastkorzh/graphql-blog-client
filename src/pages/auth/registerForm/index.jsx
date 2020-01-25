@@ -73,7 +73,7 @@ const Register = ({ history }) => {
     if (data && data.reg.token) {
       localStorage.token = data.reg.token;
       localStorage.email = data.reg.email;
-
+      console.log(data)
       history.push('/');
     };
   }, [data])

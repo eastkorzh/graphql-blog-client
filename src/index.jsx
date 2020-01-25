@@ -3,9 +3,11 @@ import ReactDOM from 'react-dom';
 import { Router, Switch, Route } from 'react-router-dom';
 import { Client as Styletron } from 'styletron-engine-atomic';
 import { Provider as StyletronProvider } from 'styletron-react';
-import { BaseProvider, DarkTheme } from 'baseui';
-import ApolloClient from 'apollo-boost';
+import { BaseProvider } from 'baseui';
 import { ApolloProvider } from '@apollo/react-hooks';
+import { ApolloClient } from 'apollo-client';
+import { InMemoryCache } from 'apollo-cache-inmemory';
+import { createUploadLink } from 'apollo-upload-client';
 
 import routes from './routes';
 import history from "./history";
@@ -13,15 +15,16 @@ import 'styles/index.css';
 import theme from 'styles/theme';
 
 const client = new ApolloClient({
-  uri: 'http://localhost:4000/',
   request: (operation) => {
     const token = localStorage.getItem('token');
     operation.setContext({
       headers: {
         authorization: token || ''
       }
-    })
+    });
   },
+  link: createUploadLink({ uri: `http://localhost:${process.env.REACT_APP_PORT || 4000}/` }),
+  cache: new InMemoryCache(),
 });
 
 const engine = new Styletron();
