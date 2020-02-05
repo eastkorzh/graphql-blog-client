@@ -1,6 +1,7 @@
 import Home from 'pages/home';
 import Auth from 'pages/auth';
 import File from 'pages/file';
+import Editor from 'pages/editor';
 
 const routes = [
   {
@@ -17,6 +18,11 @@ const routes = [
     path: '/file',
     exact: true,
     component: File
+  },
+  {
+    path: '/editor',
+    exact: true,
+    component: Editor
   },
   
 ]

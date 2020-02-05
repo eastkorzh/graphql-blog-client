@@ -1,0 +1,10 @@
+.container {
+  height: 100vh;
+  article {
+    margin: 0 auto;
+    max-width: 800px;
+    .editableP {
+      outline: none;
+    }
+  }
+}
