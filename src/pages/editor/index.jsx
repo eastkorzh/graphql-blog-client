@@ -15,7 +15,7 @@ import s from './styles.module.scss';
 //
 // 3) Handle new line action
 //
-// 4) Handle delete line action
+// 4) Handle delete line action --done
 //
 // 5) Handle multiline delition
 //
@@ -41,6 +41,8 @@ const Editor = () => {
     if (selectedNode) {
       if (selectedNode.type === 'NEW_LINE') {
         document.getSelection().collapse(selectedNode.node.nextSibling, 0)
+      } else if (selectedNode.type === 'DELETE_LINE') {
+        document.getSelection().collapse(selectedNode.node.firstChild, selectedNode.offset)
       } else {
         document.getSelection().collapse(selectedNode.node, selectedNode.offset)
       }
@@ -107,6 +109,67 @@ const Editor = () => {
       setSelectedNode({ node: nodeWithDataset, offset: anchorOffset, type: 'NEW_LINE' })
       setArticleText(newState);
     }
+
+    if (e.keyCode === 8) {
+      e.preventDefault();
+
+      const { anchorNode, anchorOffset } = document.getSelection();
+
+      if (anchorOffset !== 0 && anchorNode.data !== '\u{200B}') {
+        document.execCommand("delete");
+      } else {
+        let index = null;
+        let nodeWithDataset = anchorNode;
+  
+        while (true) {
+          let i = 0;
+          if (nodeWithDataset.dataset && nodeWithDataset.dataset.index) {
+            index = parseInt(nodeWithDataset.dataset.index);
+            break;
+          } else {
+            if (i < 20) i++ 
+            else break;
+            nodeWithDataset = nodeWithDataset.parentNode;
+          }
+        }
+
+        if (nodeWithDataset.previousSibling) {
+          const newState = [];
+          const firstPart = articleText[index-1].content;
+          const lastPart = articleText[index].content;
+          let result = '';
+
+          if (firstPart === '\u{200B}' && lastPart === '\u{200B}') {
+            result = '\u{200B}';
+          } else if (lastPart === '\u{200B}') {
+            result = firstPart;
+          } else if (firstPart === '\u{200B}') {
+            result = lastPart;
+          } else {
+            result = firstPart + lastPart;
+          }
+
+          for (let i = 0; i < articleText.length; i++) {
+            if (i !== index-1) {
+              if (i === index) continue;
+              newState.push(articleText[i])
+            } else {
+              newState.push({
+                tag: 'p',
+                content: result,
+              })
+            }
+          }
+          setArticleText(newState)
+          setSelectedNode({ 
+            type: 'DELETE_LINE',
+            node: nodeWithDataset.previousSibling, 
+            offset: firstPart === '\u{200B}' ? 0 : firstPart.length, 
+          })
+        }
+      }
+    }
+    // delete keyCode - 46
   }
 
   const focus = () => {
