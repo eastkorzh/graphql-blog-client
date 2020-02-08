@@ -3,8 +3,9 @@
   article {
     margin: 0 auto;
     max-width: 800px;
-    .editableP {
-      outline: none;
+    outline: none;
+    p {
+      line-height: 20px;
     }
   }
 }

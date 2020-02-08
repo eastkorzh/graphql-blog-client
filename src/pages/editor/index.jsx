@@ -1,107 +1,142 @@
-import React, { useState, useEffect, createRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import s from './styles.module.scss';
 
+// To do
+//
+// 1) Prevent caret moving to the line begining --done
+// 1.1) Track caret position --done
+// 1.2) Manualy move caret back --done
+//
+// 2) Handle new paragraph action
+// 2.1) Line breack --done
+// 2.2) New paragraph --done
+// 2.3) N+1 paragraph error --done
+//
+// 3) Handle new line action
+//
+// 4) Handle delete line action
+//
+// 5) Handle multiline delition
+//
+// Write caret moove reducer
+
+
 const Editor = () => {
-  const [articleText, setArticleText] = useState(`Some text /n kalsdjf`);
-  const ref = createRef();
-  const range = new Range;
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [articleText, setArticleText] = useState(//JSON.parse(localStorage.article) || 
+  [
+    {tag: "p", content: "Never gonna give you up"},
+    {tag: "p", content: "Never gonna let you down"},
+    {tag: "p", content: "Never gonna run around and desert you"}
+  ]);
+  const ref = React.createRef();
+  //const range = new Range;
 
   useEffect(() => {
-    console.log(articleText)
-  }, [articleText]);
-
-  const onArticleChange = () => {
-    const elements = ref.current.children;
-
-    let content = "";
-
-    for (let elem of elements) {
-      const textParts = elem.innerHTML.split('\n');
-
-      if (textParts.length === 2) {
-        //elem.innerHTML = textParts[0] + '<br />' + textParts[1];
+    // const a = JSON.stringify(articleText)
+    // if (a) {
+    //   localStorage.article = a;
+    // }
+    if (selectedNode) {
+      if (selectedNode.type === 'NEW_LINE') {
+        document.getSelection().collapse(selectedNode.node.nextSibling, 0)
+      } else {
+        document.getSelection().collapse(selectedNode.node, selectedNode.offset)
       }
     }
+  }, [articleText]);
 
-    //console.log(content)
-    //setArticleText(content)
+  const onArticleChange = (e) => {
+    const { anchorNode, anchorOffset } = document.getSelection();
+
+    const newState = [];
+    for (let node of e.target.children) {
+      newState.push({
+        tag: node.localName,
+        content: node.textContent
+      })
+    }
+
+    setArticleText(newState);
+
+    setSelectedNode({ node: anchorNode, offset: anchorOffset })
+  }
+
+  const keyDown = (e) => {
+    const { anchorNode, anchorOffset } = document.getSelection();
+
+    if (e.keyCode === 13) {
+      e.preventDefault();
+
+      let index = null;
+      let nodeWithDataset = anchorNode;
+
+      while (true) {
+        let i = 0;
+        if (nodeWithDataset.dataset && nodeWithDataset.dataset.index) {
+          index = parseInt(nodeWithDataset.dataset.index);
+          break;
+        } else {
+          if (i < 20) i++ 
+          else break;
+          nodeWithDataset = nodeWithDataset.parentNode;
+        }
+      }
+
+      const firstPart = articleText[index].content.slice(0, anchorOffset) || '\u{200B}';
+      const lastPart = articleText[index].content.slice(anchorOffset) || '\u{200B}';
+
+      const newState = [];
+
+      for (let i = 0; i < articleText.length; i++) {
+        if (i !== index) {
+          newState.push(articleText[i])
+        } else {
+          newState.push({
+            tag: 'p',
+            content: firstPart,
+          })
+          newState.push({
+            tag: 'p',
+            content: lastPart,
+          })
+        }
+      }
+
+      setSelectedNode({ node: nodeWithDataset, offset: anchorOffset, type: 'NEW_LINE' })
+      setArticleText(newState);
+    }
+  }
+
+  const focus = () => {
+    const nodes = ref.current.children;
+    const lastNode = nodes[nodes.length - 1].firstChild
+
+    if (!document.getSelection().anchorNode) {
+      document.getSelection().collapse(lastNode, lastNode.length)
+    }
   }
 
   return(
-    <div className={s.container}>
-      <article ref={ref} onKeyUp={onArticleChange}>
-        <p 
-          onKeyDown={e => {
-            if (e.keyCode === 13) {
-              e.preventDefault();
-              const { anchorNode, anchorOffset } = document.getSelection();
-              let newEmptyLine = false;
-              if (anchorOffset === 0) {
-                console.log(anchorNode);
-                return;
-              };
-              // console.log('anchorNode: ', anchorNode, anchorNode.parentNode.localName)
-              // console.log(e.target.textContent)
-              if (anchorNode.parentNode.localName === 'p') {
-                range.selectNode(anchorNode);
-                let newNode = document.createElement('span');
-                newNode.innerHTML = anchorNode.data;
-                try {
-                  range.deleteContents();
-                  range.insertNode(newNode);
-                } catch(e) { alert(e) }
-              }
-
-              if (!anchorNode.data || anchorNode.data.length === anchorOffset) {
-                newEmptyLine = true;
-              }
-              if (!anchorNode.data) return;
-
-              const firstPart = anchorNode.data.slice(0, anchorOffset);
-              const lastPart = anchorNode.data.slice(anchorOffset);
-              let nodeNum = null;
-   
-              if (e.target.children.length === 0) {
-                e.target.outerHTML = `<span>${firstPart}</span><br /><span>${lastPart}</span>`;
-              } else {
-                for (let i = 0; i < e.target.children.length; i++) {
-                  const node = e.target.children[i];
-                  
-                  if (node === anchorNode.data || node.innerHTML === anchorNode.data) {
-                    nodeNum = i;
-                    if (newEmptyLine) {
-                      node.outerHTML = `<span>${firstPart}</span><br /><br />`;
-                    } else {
-                      node.outerHTML = `<span>${firstPart}</span><br /><span>${lastPart}</span>`;
-                    }
-                  }     
-                }
-              }
-            
-              //set caret to the position where Enter was pressed
-              let caretPositionNode = null;
-
-              if (newEmptyLine) {
-                caretPositionNode = e.target.children[nodeNum + 2];
-              } else {
-                caretPositionNode = e.target.children.length ? 
-                  e.target.children[nodeNum].firstChild :
-                  e.target.firstChild;
-              }
-
-              if (caretPositionNode) {
-                console.log(caretPositionNode, caretPositionNode.length || 0)
-                document.getSelection().collapse(caretPositionNode, caretPositionNode.length || 0);
-              }
-            }
-          }}
-          className={s.editableP} 
-          contentEditable={true}
-        >
-          <span>textToEdit</span>
-        </p>
-        {/* {articleText} */}
+    <div className={s.container} onClick={focus}>
+      <article
+        onInput={onArticleChange}
+        onKeyDown={keyDown}
+        contentEditable={true} 
+        suppressContentEditableWarning={true}
+        ref={ref}
+      >
+        {articleText && articleText.map((item, index) => {
+          return React.createElement(
+            item.tag || 'p',
+            { 
+              key: index,
+              'data-index': index,
+            },
+            item.content,
+          )
+        })}
       </article>
     </div>
   )
