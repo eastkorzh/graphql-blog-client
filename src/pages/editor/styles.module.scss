@@ -1,11 +1,15 @@
+@import url('https://fonts.googleapis.com/css?family=PT+Serif:400,400i,700,700i&display=swap&subset=cyrillic');
+
 .container {
   height: 100vh;
   article {
     margin: 0 auto;
     max-width: 800px;
     outline: none;
+    font-family: 'PT Serif', serif !important;
     p {
       line-height: 20px;
+      margin-top: 15px;
     }
   }
 }

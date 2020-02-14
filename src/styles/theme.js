@@ -4,7 +4,7 @@ const primitives = {
   ...darkThemePrimitives,
   primaryFontFamily: 'JetBrains',
 };
-console.log(DarkTheme)
+
 const overrides = {
   colors: {
     ...DarkTheme.colors,

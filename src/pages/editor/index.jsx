@@ -1,204 +1,201 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createRef } from 'react';
 
+import initialState from './initialState';
+import throttle from 'utils/throttle';
 import s from './styles.module.scss';
 
-// To do
-//
-// 1) Prevent caret moving to the line begining --done
-// 1.1) Track caret position --done
-// 1.2) Manualy move caret back --done
-//
-// 2) Handle new paragraph action
-// 2.1) Line breack --done
-// 2.2) New paragraph --done
-// 2.3) N+1 paragraph error --done
-//
-// 3) Handle new line action
-//
-// 4) Handle delete line action --done
-//
-// 5) Handle multiline delition
-//
-// Write caret moove reducer
-
+const br = 'U+23CE';
 
 const Editor = () => {
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [articleText, setArticleText] = useState(//JSON.parse(localStorage.article) || 
-  [
-    {tag: "p", content: "Never gonna give you up"},
-    {tag: "p", content: "Never gonna let you down"},
-    {tag: "p", content: "Never gonna run around and desert you"}
-  ]);
-  const ref = React.createRef();
-  //const range = new Range;
+  const [articleState, setArticleState] = useState(initialState);
+  const [caretPosition, setCaretPosition] = useState(null)
+  const articleRef = createRef();
 
   useEffect(() => {
-    // const a = JSON.stringify(articleText)
-    // if (a) {
-    //   localStorage.article = a;
-    // }
-    if (selectedNode) {
-      if (selectedNode.type === 'NEW_LINE') {
-        document.getSelection().collapse(selectedNode.node.nextSibling, 0)
-      } else if (selectedNode.type === 'DELETE_LINE') {
-        document.getSelection().collapse(selectedNode.node.firstChild, selectedNode.offset)
-      } else {
-        document.getSelection().collapse(selectedNode.node, selectedNode.offset)
-      }
-    }
-  }, [articleText]);
+    if (caretPosition) {
+      const { nodeAddress, offset } = caretPosition;
 
-  const onArticleChange = (e) => {
-    const { anchorNode, anchorOffset } = document.getSelection();
-
-    const newState = [];
-    for (let node of e.target.children) {
-      newState.push({
-        tag: node.localName,
-        content: node.textContent
-      })
-    }
-
-    setArticleText(newState);
-
-    setSelectedNode({ node: anchorNode, offset: anchorOffset })
-  }
-
-  const keyDown = (e) => {
-    const { anchorNode, anchorOffset } = document.getSelection();
-
-    if (e.keyCode === 13) {
-      e.preventDefault();
-
-      let index = null;
-      let nodeWithDataset = anchorNode;
-
-      while (true) {
-        let i = 0;
-        if (nodeWithDataset.dataset && nodeWithDataset.dataset.index) {
-          index = parseInt(nodeWithDataset.dataset.index);
-          break;
-        } else {
-          if (i < 20) i++ 
-          else break;
-          nodeWithDataset = nodeWithDataset.parentNode;
-        }
-      }
-
-      const firstPart = articleText[index].content.slice(0, anchorOffset) || '\u{200B}';
-      const lastPart = articleText[index].content.slice(anchorOffset) || '\u{200B}';
-
-      const newState = [];
-
-      for (let i = 0; i < articleText.length; i++) {
-        if (i !== index) {
-          newState.push(articleText[i])
-        } else {
-          newState.push({
-            tag: 'p',
-            content: firstPart,
-          })
-          newState.push({
-            tag: 'p',
-            content: lastPart,
-          })
-        }
-      }
-
-      setSelectedNode({ node: nodeWithDataset, offset: anchorOffset, type: 'NEW_LINE' })
-      setArticleText(newState);
-    }
-
-    if (e.keyCode === 8) {
-      e.preventDefault();
-
-      const { anchorNode, anchorOffset } = document.getSelection();
-
-      if (anchorOffset !== 0 && anchorNode.data !== '\u{200B}') {
-        document.execCommand("delete");
-      } else {
-        let index = null;
-        let nodeWithDataset = anchorNode;
+      const caretNode = articleRef.current
+        .childNodes[nodeAddress[0]]
+        .childNodes[nodeAddress[1]]
+        .childNodes[nodeAddress[2]]
   
-        while (true) {
-          let i = 0;
-          if (nodeWithDataset.dataset && nodeWithDataset.dataset.index) {
-            index = parseInt(nodeWithDataset.dataset.index);
-            break;
-          } else {
-            if (i < 20) i++ 
-            else break;
-            nodeWithDataset = nodeWithDataset.parentNode;
-          }
-        }
+      document.getSelection().collapse(caretNode.lastChild, offset);
+    }
+  }, [articleState])
 
-        if (nodeWithDataset.previousSibling) {
-          const newState = [];
-          const firstPart = articleText[index-1].content;
-          const lastPart = articleText[index].content;
-          let result = '';
-
-          if (firstPart === '\u{200B}' && lastPart === '\u{200B}') {
-            result = '\u{200B}';
-          } else if (lastPart === '\u{200B}') {
-            result = firstPart;
-          } else if (firstPart === '\u{200B}') {
-            result = lastPart;
-          } else {
-            result = firstPart + lastPart;
-          }
-
-          for (let i = 0; i < articleText.length; i++) {
-            if (i !== index-1) {
-              if (i === index) continue;
-              newState.push(articleText[i])
-            } else {
-              newState.push({
-                tag: 'p',
-                content: result,
-              })
-            }
-          }
-          setArticleText(newState)
-          setSelectedNode({ 
-            type: 'DELETE_LINE',
-            node: nodeWithDataset.previousSibling, 
-            offset: firstPart === '\u{200B}' ? 0 : firstPart.length, 
-          })
-        }
+  const getNodeWithDataset = (anchorNode, dataset = 'index') => {
+    let index = null;
+    let nodeWithDataset = anchorNode;
+  
+    while (true) {
+      let i = 0;
+      if (nodeWithDataset.dataset && nodeWithDataset.dataset[dataset]) {
+        index = parseInt(nodeWithDataset.dataset[dataset]);
+        break;
+      } else {
+        if (i < 20) i++ 
+        else break;
+        nodeWithDataset = nodeWithDataset.parentNode;
       }
     }
-    // delete keyCode - 46
+
+    return { index, nodeWithDataset }
   }
 
-  const focus = () => {
-    const nodes = ref.current.children;
-    const lastNode = nodes[nodes.length - 1].firstChild
+  const selectChange = () => {
+    const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
+    if (!anchorNode || !anchorOffset) return;
+    const anchorText = anchorNode.data;
+    const focusText = focusNode.data;
+    const result = [0, 0];
+    const { nodeWithDataset, index } = getNodeWithDataset(anchorNode);
 
-    if (!document.getSelection().anchorNode) {
-      document.getSelection().collapse(lastNode, lastNode.length)
+    let anchorOffsetFounded = false;
+    let focusOffsetFounded = false;
+
+    for (let node of nodeWithDataset.childNodes) {
+      if (!anchorOffsetFounded) {
+        if (node.textContent !== anchorText) {
+          result[0] += node.textContent.length;
+        } else {
+          result[0] += anchorOffset;
+          anchorOffsetFounded = true;
+        }
+      }
+      
+      if (!focusOffsetFounded) {
+        if (node.textContent !== focusText) {
+          result[1] += node.textContent.length;
+        } else {
+          result[1] += focusOffset;
+          focusOffsetFounded = true;
+        }
+      }
+
+      if (anchorOffsetFounded && focusOffsetFounded) break;
+    }
+    const nodeAddress = getNodeWithDataset(anchorNode, 'spanindex')
+      .nodeWithDataset
+      .dataset
+      .spanindex.split(',')
+      .map(a => parseInt(a))
+    
+    
+    // console.log(articleRef.current.childNodes[nodeAddress[0]].childNodes[nodeAddress[1]].childNodes[nodeAddress[2]])
+    // console.log(result.sort((a, b) => a - b))
+
+    // setCaretPosition({
+    //   offset: anchorOffset,
+    //   selection: isCollapsed ? result[0] : result.sort((a, b) => a - b),
+    //   nodeAddress,
+    // })
+
+    return {
+      offset: anchorOffset,
+      selection: isCollapsed ? result[0] : result.sort((a, b) => a - b),
+      nodeAddress,
     }
   }
 
-  return(
-    <div className={s.container} onClick={focus}>
+  const onArticleChange = () => {
+    const result = [];
+
+    // iterate paragraphs
+    for (let node of articleRef.current.childNodes) {
+      const paragraph = {
+        type: 'text',
+        content: []
+      }
+
+      // itarate paragraphs text blocks
+      for (let childNode of node.childNodes) {
+        if (childNode.localName === 'span') {
+          if (childNode.childNodes.length > 1) {
+            const styles = [];
+            let offset = 0;
+
+            // iterate text blocks spans
+            for (let styledNode of childNode.childNodes) {
+              const { fontWeight, fontStyle } = styledNode.style;
+              
+              styles.push({
+                style: {
+                  fontWeight,
+                  fontStyle,
+                },
+                range: [offset, offset+styledNode.textContent.length]
+              })
+              offset += styledNode.textContent.length;
+            }
+
+            paragraph.content.push({
+              text: childNode.textContent,
+              styles,
+            })
+          } else {
+            paragraph.content.push({
+              text: childNode.textContent,
+              styles: null
+            })
+          }
+        } else {
+          paragraph.content.push(br)
+        }
+      }
+
+      result.push(paragraph)
+    }
+    
+    setArticleState(result)
+
+    //const { offset, selection, nodeAddress } = selectChange();
+    
+    setCaretPosition(selectChange())
+  }
+  
+  document.onselectionchange = throttle(selectChange, 300);
+
+  return (
+    <div className={s.container}>
       <article
-        onInput={onArticleChange}
-        onKeyDown={keyDown}
         contentEditable={true} 
         suppressContentEditableWarning={true}
-        ref={ref}
+        onInput={onArticleChange}
+        ref={articleRef}
       >
-        {articleText && articleText.map((item, index) => {
-          return React.createElement(
-            item.tag || 'p',
-            { 
-              key: index,
-              'data-index': index,
-            },
-            item.content,
-          )
+        {articleState && articleState.map((item, index) => {
+          if (item.type === 'text') {
+            return (
+              <p data-index={index} key={index}>
+                {item.content.map((contentItem, contentIndex) => {
+                  if (contentItem === br) {
+                    return <br key={contentIndex}/>
+                  } else {
+                    const { text, styles } = contentItem;
+                    let result = [];
+                    if (styles) {
+                      for (let i=0; i<styles.length; i++) {
+                        result.push(
+                          <span key={i} data-spanindex={[index, contentIndex, i]} style={styles[i].style}>{text.slice(...styles[i].range)}</span>);
+                      }
+                    } else {
+                      result = <span data-spanindex={[index, contentIndex, 0]}>{text}</span>;
+                    }
+                    return (
+                      <span 
+                        data-index={index} 
+                        data-contentindex={contentIndex}
+                        key={contentIndex}
+                      >
+                        {result}
+                      </span>
+                    )
+                  }
+                })}
+              </p>
+            ) 
+          }
         })}
       </article>
     </div>
