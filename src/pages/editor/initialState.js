@@ -6,6 +6,27 @@ const initialState = [
     content: [
       {
         text: "1. Never gonna give you up",
+        styles: [
+          {
+            style: {
+              fontWeight: "",
+              fontStyle: "",
+            },
+            range: [0, 5]
+          }, {
+            style: {
+              fontWeight: 'bold',
+              fontStyle: 'italic',
+            },
+            range: [5, 12]
+          }, {
+            style: {
+              fontWeight: "",
+              fontStyle: "",
+            },
+            range: [12, 26]
+          }
+        ]
       },
       br,
       {

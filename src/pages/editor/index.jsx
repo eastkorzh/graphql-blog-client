@@ -5,6 +5,7 @@ import throttle from 'utils/throttle';
 import s from './styles.module.scss';
 
 const br = 'U+23CE';
+const zws = '\u200B' //zero width space
 
 const Editor = () => {
   const [articleState, setArticleState] = useState(initialState);
@@ -19,15 +20,15 @@ const Editor = () => {
         .childNodes[nodeAddress[0]]
         .childNodes[nodeAddress[1]]
         .childNodes[nodeAddress[2]]
-  
-      document.getSelection().collapse(caretNode.lastChild, offset);
+
+      caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
     }
-  }, [articleState])
+  }, [articleState, caretPosition, articleRef])
 
   const getNodeWithDataset = (anchorNode, dataset = 'index') => {
     let index = null;
     let nodeWithDataset = anchorNode;
-  
+    
     while (true) {
       let i = 0;
       if (nodeWithDataset.dataset && nodeWithDataset.dataset[dataset]) {
@@ -45,11 +46,10 @@ const Editor = () => {
 
   const selectChange = () => {
     const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
-    if (!anchorNode || !anchorOffset) return;
     const anchorText = anchorNode.data;
     const focusText = focusNode.data;
     const result = [0, 0];
-    const { nodeWithDataset, index } = getNodeWithDataset(anchorNode);
+    const { nodeWithDataset } = getNodeWithDataset(anchorNode);
 
     let anchorOffsetFounded = false;
     let focusOffsetFounded = false;
@@ -75,21 +75,12 @@ const Editor = () => {
 
       if (anchorOffsetFounded && focusOffsetFounded) break;
     }
+
     const nodeAddress = getNodeWithDataset(anchorNode, 'spanindex')
       .nodeWithDataset
       .dataset
       .spanindex.split(',')
       .map(a => parseInt(a))
-    
-    
-    // console.log(articleRef.current.childNodes[nodeAddress[0]].childNodes[nodeAddress[1]].childNodes[nodeAddress[2]])
-    // console.log(result.sort((a, b) => a - b))
-
-    // setCaretPosition({
-    //   offset: anchorOffset,
-    //   selection: isCollapsed ? result[0] : result.sort((a, b) => a - b),
-    //   nodeAddress,
-    // })
 
     return {
       offset: anchorOffset,
@@ -153,6 +144,152 @@ const Editor = () => {
     
     setCaretPosition(selectChange())
   }
+
+  const onKeyDown = (e) => {
+    const { offset, selection, nodeAddress } = selectChange()
+
+    const caretNode = articleRef.current
+        .childNodes[nodeAddress[0]]
+        .childNodes[nodeAddress[1]]
+        .childNodes[nodeAddress[2]]
+
+    // Enter
+    if (e.keyCode === 13) {
+      e.preventDefault();
+      const nodeCopy = articleState[nodeAddress[0]].content[nodeAddress[1]];
+      const firstPartText = nodeCopy.text.slice(0, selection) || zws;
+      const lastPartText = nodeCopy.text.slice(selection) || zws;
+      
+      let firstPartStyles = []
+      let lastPartStyles = []
+
+      if (nodeCopy.styles) {
+
+        for (let item of nodeCopy.styles) {
+          if (item.range[1] <= selection) {
+            firstPartStyles.push(item);
+            continue;
+          }
+
+          if (item.range[0] < selection && item.range[1] > selection) {
+            firstPartStyles.push({
+              ...item,
+              range: [item.range[0], selection]
+            });
+            lastPartStyles.push({
+              ...item,
+              range: [0, item.range[1] - selection]
+            })
+            continue;
+          }
+
+          if (item.range[0] >= selection) {
+            lastPartStyles.push(item)
+            continue;
+          }
+        }
+
+      }
+
+      if (!firstPartStyles.length) firstPartStyles = null;
+      if (!lastPartStyles.length) lastPartStyles = null;
+
+      const result = [];
+
+      for (let paragraphIndex=0; paragraphIndex<articleState.length; paragraphIndex++) {
+        const paragraph = articleState[paragraphIndex];
+
+        if (paragraphIndex !== nodeAddress[0]) {
+          result.push(paragraph)
+        } else {
+          const firstPartContent = [];
+          const lastPartContent = [];
+
+          for (let contentIndex=0; contentIndex<paragraph.content.length; contentIndex++) {
+            if (contentIndex !== nodeAddress[1]) {
+              if (contentIndex <= nodeAddress[1]) {
+                firstPartContent.push(paragraph.content[contentIndex])
+              } else {
+                lastPartContent.push(paragraph.content[contentIndex])
+              }
+            } else {
+              firstPartContent.push({
+                text: firstPartText,
+                styles: firstPartStyles,
+              });
+
+              lastPartContent.push({
+                text: lastPartText,
+                styles: lastPartStyles,
+              });
+            }
+          }
+
+          result.push({
+            type: 'text',
+            content: firstPartContent,
+          });       
+          
+          result.push({
+            type: 'text',
+            content: lastPartContent,
+          });
+        }
+      }
+
+      setArticleState(result);
+      setCaretPosition({
+        offset: 0,
+        selection: 0,
+        nodeAddress: [nodeAddress[0]+1, 0, 0]
+      })
+    }
+
+    // Backspace
+    if (e.keyCode === 8) {
+      if (offset === 0) {
+        e.preventDefault();
+        
+
+      }
+
+      if (offset === 1 && caretNode.textContent.length === 1) {
+        e.preventDefault()
+
+        const stateCopy = [...articleState];
+        const nodeCopy = articleState[nodeAddress[0]].content[nodeAddress[1]];
+        
+        if (nodeCopy.text.length !== 1) {
+          nodeCopy.text = nodeCopy.text.slice(0, nodeCopy.text.length - 1);
+        } else {
+          nodeCopy.text = zws;
+          stateCopy[nodeAddress[0]].content[nodeAddress[1]] = nodeCopy;
+          setArticleState(stateCopy);
+          return;
+        }
+
+        if (nodeCopy.styles !== null) {
+          nodeCopy.styles = nodeCopy.styles.filter((item, index) => index !== nodeAddress[2])
+        }
+        
+        stateCopy[nodeAddress[0]].content[nodeAddress[1]] = nodeCopy;
+
+        if (nodeAddress[2] > 0) {
+          setCaretPosition({
+            offset: articleRef.current
+            .childNodes[nodeAddress[0]]
+            .childNodes[nodeAddress[1]]
+            .childNodes[nodeAddress[2] - 1].lastChild.length,
+            selection: selection - 1,
+            nodeAddress: [nodeAddress[0], nodeAddress[1], nodeAddress[2] - 1]
+          })
+        }
+
+        setArticleState(stateCopy)
+      }
+    }
+    //console.log(offset, selection, nodeAddress, caretNode.textContent)
+  }
   
   document.onselectionchange = throttle(selectChange, 300);
 
@@ -162,6 +299,7 @@ const Editor = () => {
         contentEditable={true} 
         suppressContentEditableWarning={true}
         onInput={onArticleChange}
+        onKeyDown={onKeyDown}
         ref={articleRef}
       >
         {articleState && articleState.map((item, index) => {
@@ -194,8 +332,8 @@ const Editor = () => {
                   }
                 })}
               </p>
-            ) 
-          }
+            )
+          } else return null;
         })}
       </article>
     </div>
