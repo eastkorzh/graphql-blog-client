@@ -67,6 +67,39 @@ const initialState = [
       },
     ],
   },
+  { 
+    type: 'text',
+    content: [
+      {
+        text: "5. Never gonna run around and desert you",
+        styles: [
+          {
+            style: {
+              fontWeight: "",
+              fontStyle: "",
+            },
+            range: [0, 5]
+          }, {
+            style: {
+              fontWeight: 'bold',
+              fontStyle: 'italic',
+            },
+            range: [5, 12]
+          }, {
+            style: {
+              fontWeight: "",
+              fontStyle: "",
+            },
+            range: [12, 40]
+          }
+        ]
+      },
+      br,
+      {
+        text: "6. Never gonna make you cry",
+      },
+    ],
+  },
 ]
 
 export default initialState;

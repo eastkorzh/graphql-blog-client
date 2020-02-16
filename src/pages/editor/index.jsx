@@ -46,6 +46,7 @@ const Editor = () => {
 
   const selectChange = () => {
     const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
+    if (anchorNode === null) return;
     const anchorText = anchorNode.data;
     const focusText = focusNode.data;
     const result = [0, 0];
@@ -139,9 +140,6 @@ const Editor = () => {
     }
     
     setArticleState(result)
-
-    //const { offset, selection, nodeAddress } = selectChange();
-    
     setCaretPosition(selectChange())
   }
 
@@ -164,7 +162,6 @@ const Editor = () => {
       let lastPartStyles = []
 
       if (nodeCopy.styles) {
-
         for (let item of nodeCopy.styles) {
           if (item.range[1] <= selection) {
             firstPartStyles.push(item);
@@ -188,7 +185,6 @@ const Editor = () => {
             continue;
           }
         }
-
       }
 
       if (!firstPartStyles.length) firstPartStyles = null;
@@ -208,15 +204,18 @@ const Editor = () => {
           for (let contentIndex=0; contentIndex<paragraph.content.length; contentIndex++) {
             if (contentIndex !== nodeAddress[1]) {
               if (contentIndex <= nodeAddress[1]) {
+                if (selection === 0 && nodeAddress[1] > 0 && paragraph.content[contentIndex] === br) continue;
                 firstPartContent.push(paragraph.content[contentIndex])
               } else {
                 lastPartContent.push(paragraph.content[contentIndex])
               }
             } else {
-              firstPartContent.push({
-                text: firstPartText,
-                styles: firstPartStyles,
-              });
+              if (!(selection === 0 && nodeAddress[1] > 0)) {
+                firstPartContent.push({
+                  text: firstPartText,
+                  styles: firstPartStyles,
+                });
+              }
 
               lastPartContent.push({
                 text: lastPartText,
@@ -224,7 +223,7 @@ const Editor = () => {
               });
             }
           }
-
+          
           result.push({
             type: 'text',
             content: firstPartContent,
@@ -247,17 +246,50 @@ const Editor = () => {
 
     // Backspace
     if (e.keyCode === 8) {
+      // caret at begining
       if (offset === 0) {
         e.preventDefault();
-        
+        const stateCopy = [...articleState];
 
+        // collapse two paragraphs
+        if (nodeAddress[1] === 0 && nodeAddress[0] !== 0) {
+          const paragraphCopy = stateCopy[nodeAddress[0]]
+          const prevParagraphCopy = stateCopy[nodeAddress[0]-1]
+          const newNodeAddress = [nodeAddress[0]-1, prevParagraphCopy.content.length+1, 0]
+          const result = [];
+
+          prevParagraphCopy.content.push(br);
+          prevParagraphCopy.content = prevParagraphCopy.content.concat(paragraphCopy.content);
+
+          for (let paragraphIndex=0; paragraphIndex<stateCopy.length; paragraphIndex++) {
+            if (paragraphIndex === nodeAddress[0]) continue;
+            if (paragraphIndex === nodeAddress[0]-1) {
+              result.push(prevParagraphCopy);
+            } else {
+              result.push(stateCopy[paragraphIndex]);
+            }
+          }
+
+          setArticleState(result);
+          setCaretPosition({
+            offset: 0,
+            selection: 0,
+            nodeAddress: newNodeAddress,
+          })
+        } 
+
+        // collapse two lines
+        if(nodeAddress[1] !== 0) {
+          console.log('line clps')
+        }
       }
 
+      // caret in text in front of span
       if (offset === 1 && caretNode.textContent.length === 1) {
         e.preventDefault()
 
         const stateCopy = [...articleState];
-        const nodeCopy = articleState[nodeAddress[0]].content[nodeAddress[1]];
+        const nodeCopy = stateCopy[nodeAddress[0]].content[nodeAddress[1]];
         
         if (nodeCopy.text.length !== 1) {
           nodeCopy.text = nodeCopy.text.slice(0, nodeCopy.text.length - 1);
@@ -288,7 +320,6 @@ const Editor = () => {
         setArticleState(stateCopy)
       }
     }
-    //console.log(offset, selection, nodeAddress, caretNode.textContent)
   }
   
   document.onselectionchange = throttle(selectChange, 300);
