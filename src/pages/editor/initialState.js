@@ -65,6 +65,14 @@ const initialState = [
       {
         text: "4. Never gonna make you cry",
       },
+      br,
+      {
+        text: "4. Never gonna make you cry",
+      },
+      br,
+      {
+        text: "4. Never gonna make you cry",
+      },
     ],
   },
   { 

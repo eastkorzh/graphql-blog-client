@@ -204,7 +204,8 @@ const Editor = () => {
           for (let contentIndex=0; contentIndex<paragraph.content.length; contentIndex++) {
             if (contentIndex !== nodeAddress[1]) {
               if (contentIndex <= nodeAddress[1]) {
-                if (selection === 0 && nodeAddress[1] > 0 && paragraph.content[contentIndex] === br) continue;
+                // prevent <br /> insertion at the paragraph ending
+                if (selection === 0 && nodeAddress[1]-1 === contentIndex && paragraph.content[contentIndex] === br) continue;
                 firstPartContent.push(paragraph.content[contentIndex])
               } else {
                 lastPartContent.push(paragraph.content[contentIndex])
@@ -251,13 +252,31 @@ const Editor = () => {
         e.preventDefault();
         const stateCopy = [...articleState];
 
+        // callapse paragraph with zws paragraph
+        if (stateCopy[nodeAddress[0]-1].content[0].text === zws) {
+          const result = [];
+          const newNodeAddress = [nodeAddress[0]-1, 0, 0];
+
+          for (let paragraphIndex=0; paragraphIndex<stateCopy.length; paragraphIndex++) {
+            if (paragraphIndex !== nodeAddress[0]-1) result.push(stateCopy[paragraphIndex])
+          }
+
+          setArticleState(result);
+          setCaretPosition({
+            offset: 0,
+            selection: 0,
+            nodeAddress: newNodeAddress,
+          })
+          return;
+        }
+
         // collapse two paragraphs
         if (nodeAddress[1] === 0 && nodeAddress[0] !== 0) {
           const paragraphCopy = stateCopy[nodeAddress[0]]
           const prevParagraphCopy = stateCopy[nodeAddress[0]-1]
           const newNodeAddress = [nodeAddress[0]-1, prevParagraphCopy.content.length+1, 0]
           const result = [];
-
+          
           prevParagraphCopy.content.push(br);
           prevParagraphCopy.content = prevParagraphCopy.content.concat(paragraphCopy.content);
 
