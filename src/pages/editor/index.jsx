@@ -11,6 +11,7 @@ const Editor = () => {
   const [articleState, setArticleState] = useState(initialState);
   const [caretPosition, setCaretPosition] = useState(null)
   const articleRef = createRef();
+  let keys = [];
 
   useEffect(() => {
     if (caretPosition) {
@@ -47,10 +48,11 @@ const Editor = () => {
 
   const selectChange = () => {
     const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
-    if (anchorNode === null) return;
+    if (anchorNode === null || !anchorNode.data) return;
     const anchorText = anchorNode.data;
     const focusText = focusNode.data;
     const result = [0, 0];
+  
     const { nodeWithDataset } = getNodeWithDataset(anchorNode);
 
     let anchorOffsetFounded = false;
@@ -142,6 +144,9 @@ const Editor = () => {
     
     setArticleState(result)
     setCaretPosition(selectChange())
+    
+    // prevent caret blinking at offset 0 after rerender
+    document.getSelection().collapse(null)
   }
 
   const onKeyDown = (e) => {
@@ -152,6 +157,109 @@ const Editor = () => {
         .childNodes[nodeAddress[1]]
         .childNodes[nodeAddress[2]]
 
+    // Shift + Enter logger
+    if ((e.keyCode === 16 && keys.indexOf(16) === -1) ||
+    (e.keyCode === 13 && keys.indexOf(13) === -1)) {
+      keys.push(e.keyCode);
+    }
+
+    // Shift + Enter
+    if (keys.length >= 2) {
+      let isRightCombination = true;
+      const sorted = keys.sort((a, b) => a - b);
+      const shiftPlusEnter = [13, 16];
+
+      for (let i = 0; i < shiftPlusEnter.length; i++) {
+        if (sorted[i] !== shiftPlusEnter[i]) {
+          isRightCombination = false;
+          break;
+        }
+      }
+
+      if (isRightCombination) {
+        e.preventDefault();
+
+        const nodeCopy = articleState[nodeAddress[0]].content[nodeAddress[1]];
+        const firstPartText = nodeCopy.text.slice(0, selection) || zws;
+        const lastPartText = nodeCopy.text.slice(selection) || zws;
+
+        let firstPartStyles = [];
+        let lastPartStyles = [];
+
+        if (nodeCopy.styles) {
+          for (let item of nodeCopy.styles) {
+            if (item.range[1] <= selection) {
+              firstPartStyles.push(item);
+              continue;
+            }
+  
+            if (item.range[0] < selection && item.range[1] > selection) {
+              firstPartStyles.push({
+                ...item,
+                range: [item.range[0], selection]
+              });
+              lastPartStyles.push({
+                ...item,
+                range: [0, item.range[1] - selection]
+              })
+              continue;
+            }
+  
+            if (item.range[0] >= selection) {
+              lastPartStyles.push({
+                ...item,
+                range: [item.range[0] - selection, item.range[1] - selection]
+              })
+              continue;
+            }
+          }
+        }
+  
+        if (!firstPartStyles.length) firstPartStyles = null;
+        if (!lastPartStyles.length) lastPartStyles = null;
+
+        let result = [];
+
+        for (let paragraphIndex=0; paragraphIndex<articleState.length; paragraphIndex++) {
+          const paragraph = articleState[paragraphIndex];
+  
+          if (paragraphIndex !== nodeAddress[0]) {
+            result.push(paragraph)
+          } else {
+            const newContent = [];
+            for (let contentIndex=0; contentIndex<paragraph.content.length; contentIndex++) {
+              if (contentIndex !== nodeAddress[1]) {
+                newContent.push(paragraph.content[contentIndex])
+              } else {
+                newContent.push({
+                  text: firstPartText,
+                  styles: firstPartStyles,
+                });
+                newContent.push(br);
+                newContent.push({
+                  text: lastPartText,
+                  styles: lastPartStyles,
+                });
+              }
+            }
+            
+            result.push({
+              type: 'text',
+              content: newContent,
+            })
+          }
+        }
+
+        setArticleState(result);
+        setCaretPosition({
+          offset: 0,
+          selection: 0,
+          nodeAddress: [nodeAddress[0], nodeAddress[1]+2, 0]
+        })
+        return;
+      }
+    }
+
     // Enter
     if (e.keyCode === 13) {
       e.preventDefault();
@@ -159,8 +267,8 @@ const Editor = () => {
       const firstPartText = nodeCopy.text.slice(0, selection) || zws;
       const lastPartText = nodeCopy.text.slice(selection) || zws;
       
-      let firstPartStyles = []
-      let lastPartStyles = []
+      let firstPartStyles = [];
+      let lastPartStyles = [];
 
       if (nodeCopy.styles) {
         for (let item of nodeCopy.styles) {
@@ -446,6 +554,12 @@ const Editor = () => {
       }
     }
   }
+
+  const keyUp = (e) => {
+    if (e.keyCode === 16 || e.keyCode === 13) {
+      keys = keys.filter(item => item !== e.keyCode)
+    }
+  }
   
   document.onselectionchange = throttle(selectChange, 300);
 
@@ -456,6 +570,7 @@ const Editor = () => {
         suppressContentEditableWarning={true}
         onInput={onArticleChange}
         onKeyDown={onKeyDown}
+        onKeyUp={keyUp}
         ref={articleRef}
       >
         {articleState && articleState.map((item, index) => {
