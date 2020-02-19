@@ -1,17 +1,19 @@
 import React, { useState, useEffect, createRef } from 'react';
 
+import { br } from './constants';
+import shiftEnter from './shiftEnter';
+import enter from './enter';
+import backspace from './backspace';
 import initialState from './initialState';
 import throttle from 'utils/throttle';
 import s from './styles.module.scss';
 
-const br = 'U+23CE';
-const zws = '\u200B' //zero width space
+let keys = [];
 
 const Editor = () => {
   const [articleState, setArticleState] = useState(initialState);
   const [caretPosition, setCaretPosition] = useState(null)
   const articleRef = createRef();
-  let keys = [];
 
   useEffect(() => {
     if (caretPosition) {
@@ -152,406 +154,47 @@ const Editor = () => {
   const onKeyDown = (e) => {
     const { offset, selection, nodeAddress } = selectChange()
 
-    const caretNode = articleRef.current
-        .childNodes[nodeAddress[0]]
-        .childNodes[nodeAddress[1]]
-        .childNodes[nodeAddress[2]]
-
     // Shift + Enter logger
     if ((e.keyCode === 16 && keys.indexOf(16) === -1) ||
     (e.keyCode === 13 && keys.indexOf(13) === -1)) {
       keys.push(e.keyCode);
     }
 
-    // Shift + Enter
-    if (keys.length >= 2) {
-      let isRightCombination = true;
-      const sorted = keys.sort((a, b) => a - b);
-      const shiftPlusEnter = [13, 16];
-
-      for (let i = 0; i < shiftPlusEnter.length; i++) {
-        if (sorted[i] !== shiftPlusEnter[i]) {
-          isRightCombination = false;
-          break;
-        }
-      }
-
-      if (isRightCombination) {
-        e.preventDefault();
-
-        const nodeCopy = articleState[nodeAddress[0]].content[nodeAddress[1]];
-        const firstPartText = nodeCopy.text.slice(0, selection) || zws;
-        const lastPartText = nodeCopy.text.slice(selection) || zws;
-
-        let firstPartStyles = [];
-        let lastPartStyles = [];
-
-        if (nodeCopy.styles) {
-          for (let item of nodeCopy.styles) {
-            if (item.range[1] <= selection) {
-              firstPartStyles.push(item);
-              continue;
-            }
-  
-            if (item.range[0] < selection && item.range[1] > selection) {
-              firstPartStyles.push({
-                ...item,
-                range: [item.range[0], selection]
-              });
-              lastPartStyles.push({
-                ...item,
-                range: [0, item.range[1] - selection]
-              })
-              continue;
-            }
-  
-            if (item.range[0] >= selection) {
-              lastPartStyles.push({
-                ...item,
-                range: [item.range[0] - selection, item.range[1] - selection]
-              })
-              continue;
-            }
-          }
-        }
-  
-        if (!firstPartStyles.length) firstPartStyles = null;
-        if (!lastPartStyles.length) lastPartStyles = null;
-
-        let result = [];
-
-        for (let paragraphIndex=0; paragraphIndex<articleState.length; paragraphIndex++) {
-          const paragraph = articleState[paragraphIndex];
-  
-          if (paragraphIndex !== nodeAddress[0]) {
-            result.push(paragraph)
-          } else {
-            const newContent = [];
-            for (let contentIndex=0; contentIndex<paragraph.content.length; contentIndex++) {
-              if (contentIndex !== nodeAddress[1]) {
-                newContent.push(paragraph.content[contentIndex])
-              } else {
-                newContent.push({
-                  text: firstPartText,
-                  styles: firstPartStyles,
-                });
-                newContent.push(br);
-                newContent.push({
-                  text: lastPartText,
-                  styles: lastPartStyles,
-                });
+    const kyeDownReducer = (articleState, e) => {
+      switch (e.keyCode) {
+        case (13 || 16):
+          if (keys.length >= 2) {
+            let isRightCombination = true;
+            const sorted = keys.sort((a, b) => a - b);
+            const shiftPlusEnter = [13, 16];
+          
+            for (let i = 0; i < shiftPlusEnter.length; i++) {
+              if (sorted[i] !== shiftPlusEnter[i]) {
+                isRightCombination = false;
+                break;
               }
             }
-            
-            result.push({
-              type: 'text',
-              content: newContent,
-            })
+          
+            if (isRightCombination) {
+              e.preventDefault();
+              return shiftEnter(articleState, selection, nodeAddress);
+            }
           }
-        }
-
-        setArticleState(result);
-        setCaretPosition({
-          offset: 0,
-          selection: 0,
-          nodeAddress: [nodeAddress[0], nodeAddress[1]+2, 0]
-        })
-        return;
+        case 13:
+          e.preventDefault();
+          return enter(articleState, selection, nodeAddress);
+        case 8:
+          return backspace(articleState, offset, selection, nodeAddress, articleRef, e);
       }
     }
 
-    // Enter
-    if (e.keyCode === 13) {
-      e.preventDefault();
-      const nodeCopy = articleState[nodeAddress[0]].content[nodeAddress[1]];
-      const firstPartText = nodeCopy.text.slice(0, selection) || zws;
-      const lastPartText = nodeCopy.text.slice(selection) || zws;
-      
-      let firstPartStyles = [];
-      let lastPartStyles = [];
+    const result = kyeDownReducer(articleState, e);
 
-      if (nodeCopy.styles) {
-        for (let item of nodeCopy.styles) {
-          if (item.range[1] <= selection) {
-            firstPartStyles.push(item);
-            continue;
-          }
+    if (result) {
+      const { newState, newCaretPosition } = result;
 
-          if (item.range[0] < selection && item.range[1] > selection) {
-            firstPartStyles.push({
-              ...item,
-              range: [item.range[0], selection]
-            });
-            lastPartStyles.push({
-              ...item,
-              range: [0, item.range[1] - selection]
-            })
-            continue;
-          }
-
-          if (item.range[0] >= selection) {
-            lastPartStyles.push({
-              ...item,
-              range: [item.range[0] - selection, item.range[1] - selection]
-            })
-            continue;
-          }
-        }
-      }
-
-      if (!firstPartStyles.length) firstPartStyles = null;
-      if (!lastPartStyles.length) lastPartStyles = null;
-
-      const result = [];
-
-      for (let paragraphIndex=0; paragraphIndex<articleState.length; paragraphIndex++) {
-        const paragraph = articleState[paragraphIndex];
-
-        if (paragraphIndex !== nodeAddress[0]) {
-          result.push(paragraph)
-        } else {
-          const firstPartContent = [];
-          const lastPartContent = [];
-
-          for (let contentIndex=0; contentIndex<paragraph.content.length; contentIndex++) {
-            if (contentIndex !== nodeAddress[1]) {
-              if (contentIndex <= nodeAddress[1]) {
-                // prevent <br /> insertion at the paragraph ending
-                if (selection === 0 && nodeAddress[1]-1 === contentIndex && paragraph.content[contentIndex] === br) continue;
-                firstPartContent.push(paragraph.content[contentIndex])
-              } else {
-                lastPartContent.push(paragraph.content[contentIndex])
-              }
-            } else {
-              if (!(selection === 0 && nodeAddress[1] > 0)) {
-                firstPartContent.push({
-                  text: firstPartText,
-                  styles: firstPartStyles,
-                });
-              }
-
-              lastPartContent.push({
-                text: lastPartText,
-                styles: lastPartStyles,
-              });
-            }
-          }
-          
-          result.push({
-            type: 'text',
-            content: firstPartContent,
-          });       
-          
-          result.push({
-            type: 'text',
-            content: lastPartContent,
-          });
-        }
-      }
-
-      setArticleState(result);
-      setCaretPosition({
-        offset: 0,
-        selection: 0,
-        nodeAddress: [nodeAddress[0]+1, 0, 0]
-      })
-    }
-
-    // Backspace
-    if (e.keyCode === 8) {
-      // caret at begining
-      if (offset === 0) {
-        e.preventDefault();
-        const stateCopy = [...articleState];
-
-        // callapse paragraph with zws paragraph
-        if (nodeAddress[0] !== 0 && nodeAddress[1] === 0 && stateCopy[nodeAddress[0]-1].content[0].text === zws) {
-          const result = [];
-          const newNodeAddress = [nodeAddress[0]-1, 0, 0];
-
-          for (let paragraphIndex=0; paragraphIndex<stateCopy.length; paragraphIndex++) {
-            if (paragraphIndex !== nodeAddress[0]-1) result.push(stateCopy[paragraphIndex])
-          }
-
-          setArticleState(result);
-          setCaretPosition({
-            offset: 0,
-            selection: 0,
-            nodeAddress: newNodeAddress,
-          })
-          return;
-        }
-
-        // collapse two paragraphs
-        if (nodeAddress[1] === 0 && nodeAddress[0] !== 0) {
-          const paragraphCopy = stateCopy[nodeAddress[0]]
-          const prevParagraphCopy = stateCopy[nodeAddress[0]-1]
-          const newNodeAddress = [nodeAddress[0]-1, prevParagraphCopy.content.length+1, 0]
-          const result = [];
-          
-          prevParagraphCopy.content.push(br);
-          prevParagraphCopy.content = prevParagraphCopy.content.concat(paragraphCopy.content);
-
-          for (let paragraphIndex=0; paragraphIndex<stateCopy.length; paragraphIndex++) {
-            if (paragraphIndex === nodeAddress[0]) continue;
-            if (paragraphIndex === nodeAddress[0]-1) {
-              result.push(prevParagraphCopy);
-            } else {
-              result.push(stateCopy[paragraphIndex]);
-            }
-          }
-
-          setArticleState(result);
-          setCaretPosition({
-            offset: 0,
-            selection: 0,
-            nodeAddress: newNodeAddress,
-          })
-        } 
-
-        // collapse two lines
-        if(nodeAddress[1] !== 0) {
-          const content = [...stateCopy[nodeAddress[0]].content];
-          const prevLineLength = content[nodeAddress[1]-2].text.length;
-
-          let newText = null;
-          let newStyles = [];
-          const resultContent = [];
-
-          if (content[nodeAddress[1]].text === zws) {
-            newText = content[nodeAddress[1]-2].text;
-          } else {
-            newText = content[nodeAddress[1]-2].text + content[nodeAddress[1]].text;
-          }
-
-          if (content[nodeAddress[1]-2].styles) {
-            newStyles = [...content[nodeAddress[1]-2].styles];
-          } else {
-            newStyles = [{
-              style: {
-                fontWeight: '',
-                fontStyle: '',
-              },
-              range: [0, prevLineLength]
-            }]
-          }
-          if (content[nodeAddress[1]].text !== zws) {
-            if (content[nodeAddress[1]].styles) {
-              for (let item of content[nodeAddress[1]].styles) {
-                const newItem = {
-                  ...item,
-                  range: [item.range[0]+prevLineLength, item.range[1]+prevLineLength]
-                }
-                newStyles.push(newItem)
-              }
-            } else {
-              newStyles.push({
-                style: {
-                  fontWeight: "",
-                  fontStyle: "",
-                },
-                range: [prevLineLength, prevLineLength + content[nodeAddress[1]].text.length]
-              })
-            }
-          }
-          
-          for (let i=0; i<content.length; i++) {
-            if (i === nodeAddress[1]-1 || i === nodeAddress[1]) continue;
-            if (i !== nodeAddress[1]-2) {
-              resultContent.push(content[i])
-            } else {
-              resultContent.push({
-                text: newText,
-                styles: newStyles,
-              })
-            }
-          }
-
-          const prevStyles = content[nodeAddress[1]-2].styles && [...content[nodeAddress[1]-2].styles];
-          let newNodeAddress = [nodeAddress[0], nodeAddress[1]-2, null];
-          let newOffset = null;
-
-          if (prevStyles) {
-            newOffset = prevStyles[prevStyles.length-1].range[1] - prevStyles[prevStyles.length-1].range[0];
-            newNodeAddress[2] = prevStyles.length - 1;
-          } else {
-            newOffset = prevLineLength;
-            newNodeAddress[2] = 0;
-          }
-
-          stateCopy[nodeAddress[0]].content = resultContent;
-
-          setArticleState(stateCopy);
-          setCaretPosition({
-            offset: newOffset,
-            selection: prevLineLength,
-            nodeAddress: newNodeAddress,
-          })
-        }
-      }
-      
-      // caret in text in front of span
-      if (offset === 1 && caretNode.textContent.length === 1) {
-        e.preventDefault()
-        const stateCopy = [...articleState];
-        const nodeCopy = stateCopy[nodeAddress[0]].content[nodeAddress[1]];
-
-        if (nodeCopy.text.length === 1) {
-          nodeCopy.text = zws;
-          nodeCopy.styles = null;
-          stateCopy[nodeAddress[0]].content[nodeAddress[1]] = nodeCopy;
-          setArticleState(stateCopy);
-          setCaretPosition({
-            offset: 0,
-            selection: 0,
-            nodeAddress,
-          })
-          return;
-        } else {
-          nodeCopy.text = nodeCopy.text.slice(0, selection-1)+nodeCopy.text.slice(selection);
-        }
-
-        if (nodeCopy.styles !== null) {
-          const result = [];
-
-          for (let i=0; i<nodeCopy.styles.length; i++) {
-            const currentStyle = nodeCopy.styles[i];
-
-            if (i === nodeAddress[2]) continue;
-            if (i < nodeAddress[2]) {
-              result.push(currentStyle)
-            }
-            if (i > nodeAddress[2]) {
-              result.push({
-                ...currentStyle,
-                range: [currentStyle.range[0]-1, currentStyle.range[1]-1]
-              })
-            }
-          }
-          nodeCopy.styles = result;
-        }
-        
-        stateCopy[nodeAddress[0]].content[nodeAddress[1]] = nodeCopy;
-
-        if (nodeAddress[2] > 0) {
-          setCaretPosition({
-            offset: articleRef.current
-            .childNodes[nodeAddress[0]]
-            .childNodes[nodeAddress[1]]
-            .childNodes[nodeAddress[2] - 1].lastChild.length,
-            selection: selection - 1,
-            nodeAddress: [nodeAddress[0], nodeAddress[1], nodeAddress[2] - 1]
-          })
-        } else {
-          setCaretPosition({
-            offset: 0,
-            selection: 0,
-            nodeAddress: [nodeAddress[0], nodeAddress[1], 0]
-          })
-        }
-
-        setArticleState(stateCopy)
-      }
+      setArticleState(newState);
+      setCaretPosition(newCaretPosition);
     }
   }
 
