@@ -8,8 +8,6 @@ import initialState from './initialState';
 import throttle from 'utils/throttle';
 import s from './styles.module.scss';
 
-let keys = [];
-
 const Editor = () => {
   const [articleState, setArticleState] = useState(initialState);
   const [caretPosition, setCaretPosition] = useState(null)
@@ -18,7 +16,8 @@ const Editor = () => {
   useEffect(() => {
     if (caretPosition) {
       const { nodeAddress, offset } = caretPosition;
-
+      console.log(nodeAddress, offset)
+      //document.getSelection().collapse(null)
       const caretNode = articleRef.current
         .childNodes[nodeAddress[0]]
         .childNodes[nodeAddress[1]]
@@ -50,48 +49,57 @@ const Editor = () => {
 
   const selectChange = () => {
     const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
-    if (anchorNode === null || !anchorNode.data) return;
+    if (anchorNode === null || !anchorNode.data || focusNode === null || !focusNode.data) return;
+    const { nodeWithDataset: anchorWithRootDataset} = getNodeWithDataset(anchorNode);
+    const { nodeWithDataset: focusWithRootDataset} = getNodeWithDataset(focusNode);
+    const { nodeWithDataset: anchorWithDataset } = getNodeWithDataset(anchorNode, 'spanindex');
+    const { nodeWithDataset: focusWithDataset } = getNodeWithDataset(focusNode, 'spanindex');
+
     const anchorText = anchorNode.data;
     const focusText = focusNode.data;
-    const result = [0, 0];
-  
-    const { nodeWithDataset } = getNodeWithDataset(anchorNode);
 
-    let anchorOffsetFounded = false;
-    let focusOffsetFounded = false;
+    const anchorDataset = anchorWithDataset.dataset.spanindex.split(',').map(a => parseInt(a));
+    const focusDataset = focusWithDataset.dataset.spanindex.split(',').map(a => parseInt(a));
 
-    for (let node of nodeWithDataset.childNodes) {
-      if (!anchorOffsetFounded) {
-        if (node.textContent !== anchorText) {
-          result[0] += node.textContent.length;
+    const selectedRange = [
+      anchorDataset,
+      focusDataset,
+    ];
+
+    let selection = null;
+
+    const getFullOffset = (rootNode, text, offset) => {
+      let result = 0;
+
+      for (let node of rootNode.childNodes) {
+        if (node.textContent !== text) {
+          result += node.textContent.length;
         } else {
-          result[0] += anchorOffset;
-          anchorOffsetFounded = true;
-        }
-      }
-      
-      if (!focusOffsetFounded) {
-        if (node.textContent !== focusText) {
-          result[1] += node.textContent.length;
-        } else {
-          result[1] += focusOffset;
-          focusOffsetFounded = true;
+          result += offset;
+          break;
         }
       }
 
-      if (anchorOffsetFounded && focusOffsetFounded) break;
+      return result;
     }
 
-    const nodeAddress = getNodeWithDataset(anchorNode, 'spanindex')
-      .nodeWithDataset
-      .dataset
-      .spanindex.split(',')
-      .map(a => parseInt(a))
+    if (isCollapsed) {
+      selection = getFullOffset(anchorWithRootDataset, anchorText, anchorOffset);
+    } else {
+      if (selectedRange[0][0] === selectedRange[1][0] && selectedRange[0][1] === selectedRange[1][1]) {
+        selectedRange[0].push(getFullOffset(anchorWithRootDataset, anchorText, anchorOffset));
+        selectedRange[1].push(getFullOffset(anchorWithRootDataset, focusText, focusOffset));
+      } else {
+        selectedRange[0].push(getFullOffset(anchorWithRootDataset, anchorText, anchorOffset));
+        selectedRange[1].push(getFullOffset(focusWithRootDataset, focusText, focusOffset));
+      }
+    }
 
     return {
-      offset: anchorOffset,
-      selection: isCollapsed ? result[0] : result.sort((a, b) => a - b),
-      nodeAddress,
+      offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
+      selection,
+      nodeAddress: selectedRange[0].slice(0, 3),
+      selectedRange: selectedRange.sort((a, b) => a - b),
     }
   }
 
@@ -152,39 +160,20 @@ const Editor = () => {
   }
 
   const onKeyDown = (e) => {
-    const { offset, selection, nodeAddress } = selectChange()
-
-    // Shift + Enter logger
-    if ((e.keyCode === 16 && keys.indexOf(16) === -1) ||
-    (e.keyCode === 13 && keys.indexOf(13) === -1)) {
-      keys.push(e.keyCode);
-    }
+    const { offset, selection, nodeAddress, selectedRange } = selectChange();
 
     const kyeDownReducer = (articleState, e) => {
       switch (e.keyCode) {
-        case (13 || 16):
-          if (keys.length >= 2) {
-            let isRightCombination = true;
-            const sorted = keys.sort((a, b) => a - b);
-            const shiftPlusEnter = [13, 16];
-          
-            for (let i = 0; i < shiftPlusEnter.length; i++) {
-              if (sorted[i] !== shiftPlusEnter[i]) {
-                isRightCombination = false;
-                break;
-              }
-            }
-          
-            if (isRightCombination) {
-              e.preventDefault();
-              return shiftEnter(articleState, selection, nodeAddress);
-            }
+        case 13:
+          if (e.shiftKey) {
+            e.preventDefault();
+            return shiftEnter(articleState, selection, nodeAddress, selectedRange);
           }
         case 13:
           e.preventDefault();
-          return enter(articleState, selection, nodeAddress);
+          return enter(articleState, selection, nodeAddress, selectedRange);
         case 8:
-          return backspace(articleState, offset, selection, nodeAddress, articleRef, e);
+          return backspace(articleState, offset, selection, nodeAddress, articleRef, e, selectedRange);
       }
     }
 
@@ -197,12 +186,6 @@ const Editor = () => {
       setCaretPosition(newCaretPosition);
     }
   }
-
-  const keyUp = (e) => {
-    if (e.keyCode === 16 || e.keyCode === 13) {
-      keys = keys.filter(item => item !== e.keyCode)
-    }
-  }
   
   document.onselectionchange = throttle(selectChange, 300);
 
@@ -213,7 +196,6 @@ const Editor = () => {
         suppressContentEditableWarning={true}
         onInput={onArticleChange}
         onKeyDown={onKeyDown}
-        onKeyUp={keyUp}
         ref={articleRef}
       >
         {articleState && articleState.map((item, index) => {

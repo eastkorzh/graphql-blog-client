@@ -1,6 +1,13 @@
 import { br, zws } from './constants';
+import deleteSelected from './deleteSelected';
 
-const backspace = (articleState, offset, selection, nodeAddress, articleRef, e) => {
+const backspace = (articleState, offset, selection, nodeAddress, articleRef, e, selectedRange) => {
+  e.preventDefault();
+  const deletionResult = deleteSelected(articleState, selectedRange, offset);
+  if (deletionResult) {
+    return deletionResult;
+  }
+  return;
   const caretNode = articleRef.current
   .childNodes[nodeAddress[0]]
   .childNodes[nodeAddress[1]]
