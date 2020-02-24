@@ -1,4 +1,6 @@
-const deleteSelected = (articleState, selectedRange, offset) => {
+import { zws } from './constants';
+
+const deleteSelected = ({ articleState, selectedRange, offset }) => {
   if (selectedRange[0].length === 3) return null;
   
   let sorted = null;
@@ -9,8 +11,8 @@ const deleteSelected = (articleState, selectedRange, offset) => {
     sorted = selectedRange.sort((a, b) => a[1] - b[1]).sort((a, b) => a[0] - b[0]);
   }
 
-  const firstContent = [...articleState[sorted[0][0]].content];
-  const lastContent = [...articleState[sorted[1][0]].content];
+  const firstContent = [...articleState.article[sorted[0][0]].content];
+  const lastContent = [...articleState.article[sorted[1][0]].content];
 
   const firstContentNode = firstContent[sorted[0][1]];
   const lastContentNode = lastContent[sorted[1][1]];
@@ -29,7 +31,7 @@ const deleteSelected = (articleState, selectedRange, offset) => {
         continue;
       }
 
-      if (item.range[0] < selection && item.range[1] > selection) {
+      if (item.range[0] < selection  && item.range[1] > selection) {
         firstStyles.push({
           ...item,
           range: [item.range[0], selection]
@@ -66,7 +68,7 @@ const deleteSelected = (articleState, selectedRange, offset) => {
         continue;
       }
     }
-  } else {
+  } else if (lastText.length) {
     lastStyles.push({
       style: {
         fontWeight: "",
@@ -79,18 +81,25 @@ const deleteSelected = (articleState, selectedRange, offset) => {
   const result = [];
   const newContent = [];
 
-  for (let i=0; i<articleState.length; i++) {
-    if (i < selectedRange[0][0]) result.push(articleState[i]);
+  for (let i=0; i<articleState.article.length; i++) {
+    if (i < selectedRange[0][0]) result.push(articleState.article[i]);
     
     if (i === selectedRange[0][0]) {
       for (let j=0; j<=selectedRange[0][1]; j++) {
         if (j !== selectedRange[0][1]) {
           newContent.push(firstContent[j])
         } else {
-          newContent.push({
-            text: firstText+lastText,
-            styles: [...firstStyles, ...lastStyles]
-          })
+          if (!(firstText+lastText)) {
+            newContent.push({
+              text: zws,
+              styles: null,
+            })
+          } else {
+            newContent.push({
+              text: firstText+lastText,
+              styles: (firstStyles.length || lastStyles.length) ? [...firstStyles, ...lastStyles] : null
+            })
+          }
         }
       }
     }
@@ -105,14 +114,14 @@ const deleteSelected = (articleState, selectedRange, offset) => {
     }
   }
 
-  for (let i=selectedRange[1][0]+1; i<articleState.length; i++) {
-    result.push(articleState[i])
+  for (let i=selectedRange[1][0]+1; i<articleState.article.length; i++) {
+    result.push(articleState.article[i])
   }
 
   return {
     newState: result,
     newCaretPosition: {
-      offset,
+      offset: offset,
       selection: selectedRange[0][3],
       nodeAddress: selectedRange[0].slice(0, 3)
     }

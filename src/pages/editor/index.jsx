@@ -1,6 +1,8 @@
 import React, { useState, useEffect, createRef } from 'react';
 
 import { br } from './constants';
+import insertText from './insertText';
+import deleteSelected from './deleteSelected';
 import shiftEnter from './shiftEnter';
 import enter from './enter';
 import backspace from './backspace';
@@ -10,22 +12,27 @@ import s from './styles.module.scss';
 
 const Editor = () => {
   const [articleState, setArticleState] = useState(initialState);
-  const [caretPosition, setCaretPosition] = useState(null)
   const articleRef = createRef();
+  const headerRef = createRef();
 
   useEffect(() => {
-    if (caretPosition) {
-      const { nodeAddress, offset } = caretPosition;
-      console.log(nodeAddress, offset)
-      //document.getSelection().collapse(null)
-      const caretNode = articleRef.current
-        .childNodes[nodeAddress[0]]
-        .childNodes[nodeAddress[1]]
-        .childNodes[nodeAddress[2]]
+    if (articleState.caretPosition) {
+      const { nodeAddress, offset } = articleState.caretPosition;
 
+      let caretNode = null;
+      
+      if (nodeAddress === null) {
+        caretNode = headerRef.current;
+      } else {
+        caretNode = articleRef.current
+          .childNodes[nodeAddress[0]]
+          .childNodes[nodeAddress[1]]
+          .childNodes[nodeAddress[2]]
+      }
+    
       caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
     }
-  }, [articleState, caretPosition, articleRef])
+  }, [articleState, articleRef])
 
   const getNodeWithDataset = (anchorNode, dataset = 'index') => {
     if (anchorNode === null) return null;
@@ -49,7 +56,18 @@ const Editor = () => {
 
   const selectChange = () => {
     const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
+
     if (anchorNode === null || !anchorNode.data || focusNode === null || !focusNode.data) return;
+
+    if (anchorNode.parentNode.localName === 'h1') {
+      return {
+        offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
+        selection: anchorOffset < focusOffset ? anchorOffset : focusOffset,
+        nodeAddress: null,
+        selectedRange: [anchorOffset, focusOffset].sort((a, b) => a - b),
+      }
+    }
+
     const { nodeWithDataset: anchorWithRootDataset} = getNodeWithDataset(anchorNode);
     const { nodeWithDataset: focusWithRootDataset} = getNodeWithDataset(focusNode);
     const { nodeWithDataset: anchorWithDataset } = getNodeWithDataset(anchorNode, 'spanindex');
@@ -94,7 +112,7 @@ const Editor = () => {
         selectedRange[1].push(getFullOffset(focusWithRootDataset, focusText, focusOffset));
       }
     }
-
+    
     return {
       offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
       selection,
@@ -104,7 +122,14 @@ const Editor = () => {
   }
 
   const onArticleChange = () => {
-    const result = [];
+    const result = {
+      ...articleState,
+      article: []
+    };
+
+    if (headerRef.current) {
+      result.h1 = headerRef.current.textContent;
+    }
 
     // iterate paragraphs
     for (let node of articleRef.current.childNodes) {
@@ -144,46 +169,127 @@ const Editor = () => {
               styles: null
             })
           }
-        } else {
+        } 
+  
+        if (childNode.localName === 'br') {
           paragraph.content.push(br)
         }
       }
 
-      result.push(paragraph)
+      result.article.push(paragraph)
+      result.caretPosition = selectChange()
     }
     
     setArticleState(result)
-    setCaretPosition(selectChange())
     
     // prevent caret blinking at offset 0 after rerender
     document.getSelection().collapse(null)
   }
 
   const onKeyDown = (e) => {
-    const { offset, selection, nodeAddress, selectedRange } = selectChange();
+    const localName = e.target.localName;
 
-    const kyeDownReducer = (articleState, e) => {
-      switch (e.keyCode) {
-        case 13:
-          if (e.shiftKey) {
-            e.preventDefault();
-            return shiftEnter(articleState, selection, nodeAddress, selectedRange);
-          }
-        case 13:
-          e.preventDefault();
-          return enter(articleState, selection, nodeAddress, selectedRange);
-        case 8:
-          return backspace(articleState, offset, selection, nodeAddress, articleRef, e, selectedRange);
+    if (localName === 'article') {
+      const { offset, selection, nodeAddress, selectedRange } = selectChange();
+
+      const kyeDownReducer = (articleState, e) => {
+        const isMultiselect = selectedRange[0].length !== 3;
+
+        switch (e.keyCode) {
+          case 13:
+            if (!isMultiselect) {
+              e.preventDefault();
+              if (e.shiftKey) {
+                return shiftEnter({ 
+                  articleState, 
+                  selection, 
+                  nodeAddress, 
+                });
+              } else {
+                return enter({ 
+                  articleState, 
+                  selection, 
+                  nodeAddress, 
+                });
+              }
+            }
+          case 8:
+            if (!isMultiselect) {
+              return backspace({ 
+                articleState, 
+                offset, 
+                selection, 
+                nodeAddress, 
+                articleRef, 
+                e,
+              });
+            }
+          default:
+            if (isMultiselect) {
+              // backspace
+              if (e.keyCode === 8) {
+                e.preventDefault()
+                return deleteSelected({
+                  articleState, 
+                  selectedRange, 
+                  offset,
+                })
+              }
+
+              // enter
+              if (e.keyCode === 13) {
+                e.preventDefault()
+                const { newState, newCaretPosition } = deleteSelected({
+                  articleState, 
+                  selectedRange, 
+                  offset,
+                });
+
+                if (e.shiftKey) {
+                  return shiftEnter({ 
+                    articleState: { article: newState }, 
+                    selection: newCaretPosition.selection, 
+                    nodeAddress: newCaretPosition.nodeAddress, 
+                  });
+                } else {
+                  return enter({ 
+                    articleState: { article: newState }, 
+                    selection: newCaretPosition.selection, 
+                    nodeAddress: newCaretPosition.nodeAddress, 
+                  });
+                }
+              }
+
+              if (e.key.length === 1 || e.keyCode === 32) {
+                e.preventDefault()
+                const { newState, newCaretPosition } = deleteSelected({
+                  articleState,
+                  selectedRange,
+                  offset,
+                })
+
+                return insertText({
+                  articleState: { article: newState },
+                  selection: newCaretPosition.selection,
+                  text: e.key,
+                  offset: newCaretPosition.offset,
+                  nodeAddress: newCaretPosition.nodeAddress,
+                })
+              }
+            }
+        }
       }
-    }
 
-    const result = kyeDownReducer(articleState, e);
+      const result = kyeDownReducer(articleState, e);
 
-    if (result) {
-      const { newState, newCaretPosition } = result;
-
-      setArticleState(newState);
-      setCaretPosition(newCaretPosition);
+      if (result) {
+        const { newState, newCaretPosition } = result;
+        setArticleState({
+          ...articleState,
+          caretPosition: newCaretPosition,
+          article: newState,
+        });
+      }
     }
   }
   
@@ -191,47 +297,65 @@ const Editor = () => {
 
   return (
     <div className={s.container}>
-      <article
-        contentEditable={true} 
-        suppressContentEditableWarning={true}
+      <div
         onInput={onArticleChange}
         onKeyDown={onKeyDown}
-        ref={articleRef}
       >
-        {articleState && articleState.map((item, index) => {
-          if (item.type === 'text') {
-            return (
-              <p data-index={index} key={index}>
-                {item.content.map((contentItem, contentIndex) => {
-                  if (contentItem === br) {
-                    return <br key={contentIndex}/>
-                  } else {
-                    const { text, styles } = contentItem;
-                    let result = [];
-                    if (styles) {
-                      for (let i=0; i<styles.length; i++) {
-                        result.push(
-                          <span key={i} data-spanindex={[index, contentIndex, i]} style={styles[i].style}>{text.slice(...styles[i].range)}</span>);
-                      }
+        {articleState && 
+          <h1
+            contentEditable={true} 
+            suppressContentEditableWarning={true}
+            ref={headerRef}
+          >
+            {articleState.h1}
+          </h1>
+        }
+        <article
+          contentEditable={true} 
+          suppressContentEditableWarning={true}
+          ref={articleRef}
+        >
+          {articleState && articleState.article.map((item, index) => {
+            if (item.type === 'text') {
+              return (
+                <p data-index={index} key={index}>
+                  {item.content.map((contentItem, contentIndex) => {
+                    if (contentItem === br) {
+                      return <br key={contentIndex}/>
                     } else {
-                      result = <span data-spanindex={[index, contentIndex, 0]}>{text}</span>;
+                      const { text, styles } = contentItem;
+                      let result = [];
+                      if (styles) {
+                        for (let i=0; i<styles.length; i++) {
+                          result.push(
+                            <span 
+                              key={i} 
+                              data-spanindex={[index, contentIndex, i]} 
+                              style={styles[i].style}
+                            >
+                              {text.slice(...styles[i].range)}
+                            </span>);
+                        }
+                      } else {
+                        result = <span data-spanindex={[index, contentIndex, 0]}>{text}</span>;
+                      }
+                      return (
+                        <span 
+                          data-index={index} 
+                          data-contentindex={contentIndex}
+                          key={contentIndex}
+                        >
+                          {result}
+                        </span>
+                      )
                     }
-                    return (
-                      <span 
-                        data-index={index} 
-                        data-contentindex={contentIndex}
-                        key={contentIndex}
-                      >
-                        {result}
-                      </span>
-                    )
-                  }
-                })}
-              </p>
-            )
-          } else return null;
-        })}
-      </article>
+                  })}
+                </p>
+              )
+            } else return null;
+          })}
+        </article>
+      </div>
     </div>
   )
 }

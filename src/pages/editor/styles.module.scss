@@ -3,13 +3,19 @@
 
 .container {
   height: 100vh;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 19px;
+  outline: none;
+  div {
+    outline: none;
+  }
+  h1 {
+    font-size: 32px;
+  }
   article {
     margin: 0 auto;
     max-width: 800px;
     outline: none;
-    //font-family: 'PT Serif', serif;
-    font-family: 'Open Sans', sans-serif;
-    font-size: 19px;
     p {
       line-height: 1.3;
       margin-top: 20px;

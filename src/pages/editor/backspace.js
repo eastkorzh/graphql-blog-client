@@ -1,13 +1,14 @@
 import { br, zws } from './constants';
 import deleteSelected from './deleteSelected';
 
-const backspace = (articleState, offset, selection, nodeAddress, articleRef, e, selectedRange) => {
-  e.preventDefault();
-  const deletionResult = deleteSelected(articleState, selectedRange, offset);
-  if (deletionResult) {
-    return deletionResult;
-  }
-  return;
+const backspace = ({
+  articleState, 
+  offset, 
+  selection, 
+  nodeAddress, 
+  articleRef, 
+  e,
+}) => {
   const caretNode = articleRef.current
   .childNodes[nodeAddress[0]]
   .childNodes[nodeAddress[1]]
@@ -17,7 +18,7 @@ const backspace = (articleState, offset, selection, nodeAddress, articleRef, e, 
   if (offset === 0) {
     e.preventDefault();
 
-    const stateCopy = [...articleState];
+    const stateCopy = [...articleState.article];
 
     // callapse paragraph with zws paragraph
     if (nodeAddress[0] !== 0 && nodeAddress[1] === 0 && stateCopy[nodeAddress[0]-1].content[0].text === zws) {
@@ -153,7 +154,7 @@ const backspace = (articleState, offset, selection, nodeAddress, articleRef, e, 
   // caret in text in front of span
   if (offset === 1 && caretNode.textContent.length === 1) {
     e.preventDefault();
-    const stateCopy = [...articleState];
+    const stateCopy = [...articleState.article];
     const nodeCopy = stateCopy[nodeAddress[0]].content[nodeAddress[1]];
 
     if (nodeCopy.text.length === 1) {

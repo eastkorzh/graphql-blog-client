@@ -1,8 +1,8 @@
 
 import { br, zws } from './constants';
 
-const enter = (articleState, selection, nodeAddress) => {
-  const nodeCopy = articleState[nodeAddress[0]].content[nodeAddress[1]];
+const enter = ({ articleState, selection, nodeAddress }) => {
+  const nodeCopy = articleState.article[nodeAddress[0]].content[nodeAddress[1]];
   const firstPartText = nodeCopy.text.slice(0, selection) || zws;
   const lastPartText = nodeCopy.text.slice(selection) || zws;
 
@@ -43,8 +43,8 @@ const enter = (articleState, selection, nodeAddress) => {
 
   const result = [];
 
-  for (let paragraphIndex=0; paragraphIndex<articleState.length; paragraphIndex++) {
-    const paragraph = articleState[paragraphIndex];
+  for (let paragraphIndex=0; paragraphIndex<articleState.article.length; paragraphIndex++) {
+    const paragraph = articleState.article[paragraphIndex];
 
     if (paragraphIndex !== nodeAddress[0]) {
       result.push(paragraph)
