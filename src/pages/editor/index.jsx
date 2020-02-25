@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createRef } from 'react';
+import cx from 'classnames';
 
-import { br } from './constants';
+import { br, zws } from './constants';
 import insertText from './insertText';
 import deleteSelected from './deleteSelected';
 import shiftEnter from './shiftEnter';
@@ -11,12 +12,21 @@ import throttle from 'utils/throttle';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  const [articleState, setArticleState] = useState(initialState);
+  const [articleState, setArticleState] = useState({
+    h1: zws,
+    article: [{
+      type: 'text',
+      content: [{
+        text: zws,
+        styles: null
+      }]
+    }]
+  });
   const articleRef = createRef();
   const headerRef = createRef();
 
   useEffect(() => {
-    if (articleState.caretPosition) {
+    if (articleState && articleState.caretPosition) {
       const { nodeAddress, offset } = articleState.caretPosition;
 
       let caretNode = null;
@@ -189,6 +199,31 @@ const Editor = () => {
   const onKeyDown = (e) => {
     const localName = e.target.localName;
 
+    if (localName === 'h1') {
+      if (e.keyCode === 13) {
+        e.preventDefault()
+        setArticleState({
+          ...articleState,
+          caretPosition: {
+            nodeAddress: [0, 0, 0],
+            selection: 0,
+            offset: 0,
+          }
+        })
+      }
+      if (e.keyCode === 8 && e.target.textContent.length === 1) {
+        e.preventDefault()
+        setArticleState({
+          ...articleState,
+          h1: zws,
+          caretPosition: {
+            ...articleState.caretPosition,
+            offset: 1,
+          }
+        })
+      }
+    }
+
     if (localName === 'article') {
       const { offset, selection, nodeAddress, selectedRange } = selectChange();
 
@@ -260,7 +295,7 @@ const Editor = () => {
                 }
               }
 
-              if (e.key.length === 1 || e.keyCode === 32) {
+              if ((e.key.length === 1 || e.keyCode === 32) && !(e.ctrlKey || e.metaKey)) {
                 e.preventDefault()
                 const { newState, newCaretPosition } = deleteSelected({
                   articleState,
@@ -298,14 +333,18 @@ const Editor = () => {
   return (
     <div className={s.container}>
       <div
+        className={s.editor}
         onInput={onArticleChange}
         onKeyDown={onKeyDown}
+        onDragStart={e => e.preventDefault()}
       >
         {articleState && 
           <h1
+            className={cx({ [s.emptyH1]: (articleState.h1 === zws) })}
             contentEditable={true} 
             suppressContentEditableWarning={true}
             ref={headerRef}
+            data-placeholder='Header'
           >
             {articleState.h1}
           </h1>
@@ -337,7 +376,17 @@ const Editor = () => {
                             </span>);
                         }
                       } else {
-                        result = <span data-spanindex={[index, contentIndex, 0]}>{text}</span>;
+                        if (!index && !contentIndex && text === zws) {
+                          result = <span 
+                            className={s.emptySpan} 
+                            data-placeholder='Text' 
+                            data-spanindex={[index, contentIndex, 0]}
+                          >
+                            {text}
+                          </span>
+                        } else {
+                          result = <span data-spanindex={[index, contentIndex, 0]}>{text}</span>;
+                        }
                       }
                       return (
                         <span 
