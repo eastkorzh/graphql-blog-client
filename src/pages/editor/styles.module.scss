@@ -8,8 +8,9 @@
   .editor {
     max-width: 600px;
     margin: 0 auto;
-    .emptyH1:not(:focus):before {
+    .emptyH1:before {
       content: attr(data-placeholder);
+      position: absolute;
       opacity: .3;
     }
     h1 {
@@ -24,11 +25,10 @@
     }
     article {
       outline: none;
-      &:not(:focus) {
-        .emptySpan:before {
-          content: attr(data-placeholder);
-          opacity: .3;
-        }
+      .emptySpan:before {
+        content: attr(data-placeholder);
+        position: absolute;
+        opacity: .3;
       }
       p {
         line-height: 1.56;

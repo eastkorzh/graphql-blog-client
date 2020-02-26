@@ -3,19 +3,11 @@ import { zws } from './constants';
 const deleteSelected = ({ articleState, selectedRange, offset }) => {
   if (selectedRange[0].length === 3) return null;
   
-  let sorted = null;
+  const firstContent = [...articleState.article[selectedRange[0][0]].content];
+  const lastContent = [...articleState.article[selectedRange[1][0]].content];
 
-  if (selectedRange[0][1] === selectedRange[1][1]) {
-    sorted = selectedRange.sort((a, b) => a[3] - b[3])
-  } else {
-    sorted = selectedRange.sort((a, b) => a[1] - b[1]).sort((a, b) => a[0] - b[0]);
-  }
-
-  const firstContent = [...articleState.article[sorted[0][0]].content];
-  const lastContent = [...articleState.article[sorted[1][0]].content];
-
-  const firstContentNode = firstContent[sorted[0][1]];
-  const lastContentNode = lastContent[sorted[1][1]];
+  const firstContentNode = firstContent[selectedRange[0][1]];
+  const lastContentNode = lastContent[selectedRange[1][1]];
 
   const firstText = firstContentNode.text.slice(0, selectedRange[0][3]);
   const lastText = lastContentNode.text.slice(selectedRange[1][3]);

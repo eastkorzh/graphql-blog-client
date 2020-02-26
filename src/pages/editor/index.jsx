@@ -2,26 +2,30 @@ import React, { useState, useEffect, createRef } from 'react';
 import cx from 'classnames';
 
 import { br, zws } from './constants';
+import selectionChange from './utils/selectionChange';
+import initialState from './initialState';
+
 import insertText from './insertText';
 import deleteSelected from './deleteSelected';
 import shiftEnter from './shiftEnter';
 import enter from './enter';
 import backspace from './backspace';
-import initialState from './initialState';
-import throttle from 'utils/throttle';
+
+import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  const [articleState, setArticleState] = useState({
-    h1: zws,
-    article: [{
-      type: 'text',
-      content: [{
-        text: zws,
-        styles: null
-      }]
-    }]
-  });
+  const [articleState, setArticleState] = useState(initialState);
+  // const [articleState, setArticleState] = useState({
+  //   h1: zws,
+  //   article: [{
+  //     type: 'text',
+  //     content: [{
+  //       text: zws,
+  //       styles: null
+  //     }]
+  //   }]
+  // });
   const articleRef = createRef();
   const headerRef = createRef();
 
@@ -43,93 +47,6 @@ const Editor = () => {
       caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
     }
   }, [articleState, articleRef])
-
-  const getNodeWithDataset = (anchorNode, dataset = 'index') => {
-    if (anchorNode === null) return null;
-    let index = null;
-    let nodeWithDataset = anchorNode;
-    
-    while (true) {
-      let i = 0;
-      if (nodeWithDataset.dataset && nodeWithDataset.dataset[dataset]) {
-        index = parseInt(nodeWithDataset.dataset[dataset]);
-        break;
-      } else {
-        if (i < 20) i++ 
-        else break;
-        nodeWithDataset = nodeWithDataset.parentNode;
-      }
-    }
-
-    return { index, nodeWithDataset }
-  }
-
-  const selectChange = () => {
-    const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
-
-    if (anchorNode === null || !anchorNode.data || focusNode === null || !focusNode.data) return;
-
-    if (anchorNode.parentNode.localName === 'h1') {
-      return {
-        offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
-        selection: anchorOffset < focusOffset ? anchorOffset : focusOffset,
-        nodeAddress: null,
-        selectedRange: [anchorOffset, focusOffset].sort((a, b) => a - b),
-      }
-    }
-
-    const { nodeWithDataset: anchorWithRootDataset} = getNodeWithDataset(anchorNode);
-    const { nodeWithDataset: focusWithRootDataset} = getNodeWithDataset(focusNode);
-    const { nodeWithDataset: anchorWithDataset } = getNodeWithDataset(anchorNode, 'spanindex');
-    const { nodeWithDataset: focusWithDataset } = getNodeWithDataset(focusNode, 'spanindex');
-
-    const anchorText = anchorNode.data;
-    const focusText = focusNode.data;
-
-    const anchorDataset = anchorWithDataset.dataset.spanindex.split(',').map(a => parseInt(a));
-    const focusDataset = focusWithDataset.dataset.spanindex.split(',').map(a => parseInt(a));
-
-    const selectedRange = [
-      anchorDataset,
-      focusDataset,
-    ];
-
-    let selection = null;
-
-    const getFullOffset = (rootNode, text, offset) => {
-      let result = 0;
-
-      for (let node of rootNode.childNodes) {
-        if (node.textContent !== text) {
-          result += node.textContent.length;
-        } else {
-          result += offset;
-          break;
-        }
-      }
-
-      return result;
-    }
-
-    if (isCollapsed) {
-      selection = getFullOffset(anchorWithRootDataset, anchorText, anchorOffset);
-    } else {
-      if (selectedRange[0][0] === selectedRange[1][0] && selectedRange[0][1] === selectedRange[1][1]) {
-        selectedRange[0].push(getFullOffset(anchorWithRootDataset, anchorText, anchorOffset));
-        selectedRange[1].push(getFullOffset(anchorWithRootDataset, focusText, focusOffset));
-      } else {
-        selectedRange[0].push(getFullOffset(anchorWithRootDataset, anchorText, anchorOffset));
-        selectedRange[1].push(getFullOffset(focusWithRootDataset, focusText, focusOffset));
-      }
-    }
-    
-    return {
-      offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
-      selection,
-      nodeAddress: selectedRange[0].slice(0, 3),
-      selectedRange: selectedRange.sort((a, b) => a - b),
-    }
-  }
 
   const onArticleChange = () => {
     const result = {
@@ -187,7 +104,7 @@ const Editor = () => {
       }
 
       result.article.push(paragraph)
-      result.caretPosition = selectChange()
+      result.caretPosition = selectionChange()
     }
     
     setArticleState(result)
@@ -225,7 +142,7 @@ const Editor = () => {
     }
 
     if (localName === 'article') {
-      const { offset, selection, nodeAddress, selectedRange } = selectChange();
+      const { offset, selection, nodeAddress, selectedRange } = selectionChange();
 
       const kyeDownReducer = (articleState, e) => {
         const isMultiselect = selectedRange[0].length !== 3;
@@ -328,10 +245,9 @@ const Editor = () => {
     }
   }
   
-  document.onselectionchange = throttle(selectChange, 300);
-
   return (
     <div className={s.container}>
+      <TextStylesSwitcher articleState={articleState} />
       <div
         className={s.editor}
         onInput={onArticleChange}
