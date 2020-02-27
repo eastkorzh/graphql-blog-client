@@ -31,20 +31,40 @@ const Editor = () => {
 
   useEffect(() => {
     if (articleState && articleState.caretPosition) {
-      const { nodeAddress, offset } = articleState.caretPosition;
+      const { nodeAddress, offset, selectedRange } = articleState.caretPosition;
 
       let caretNode = null;
-      
-      if (nodeAddress === null) {
-        caretNode = headerRef.current;
+
+      if (Array.isArray(offset)) {
+        const range = new Range();
+
+        const caretNodeStart = articleRef.current
+          .childNodes[selectedRange[0][0]]
+          .childNodes[selectedRange[0][1]]
+          .childNodes[selectedRange[0][2]]
+
+        const caretNodeEnd = articleRef.current
+          .childNodes[selectedRange[1][0]]
+          .childNodes[selectedRange[1][1]]
+          .childNodes[selectedRange[1][2]]
+
+        range.setStart(caretNodeStart.lastChild, offset[0]);
+        range.setEnd(caretNodeEnd.lastChild, offset[1]);
+
+        document.getSelection().removeAllRanges();
+        document.getSelection().addRange(range);
       } else {
-        caretNode = articleRef.current
-          .childNodes[nodeAddress[0]]
-          .childNodes[nodeAddress[1]]
-          .childNodes[nodeAddress[2]]
-      }
-    
-      caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
+        if (nodeAddress === null) {
+          caretNode = headerRef.current;
+        } else {
+          caretNode = articleRef.current
+            .childNodes[nodeAddress[0]]
+            .childNodes[nodeAddress[1]]
+            .childNodes[nodeAddress[2]]
+        }
+      
+        caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
+      }    
     }
   }, [articleState, articleRef])
 
@@ -247,7 +267,7 @@ const Editor = () => {
   
   return (
     <div className={s.container}>
-      <TextStylesSwitcher articleState={articleState} />
+      <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/>
       <div
         className={s.editor}
         onInput={onArticleChange}

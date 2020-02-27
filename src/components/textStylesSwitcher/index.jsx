@@ -1,106 +1,192 @@
 import React, { useEffect, useState } from 'react';
 
+import { br } from 'pages/editor/constants';
 import throttle from 'utils/throttle';
-import selectionChange from 'pages/editor/utils/selectionChange'
-import s from './styles.module.scss';
+import selectionChange from 'pages/editor/utils/selectionChange';
+import updateNode from './updateNode';
+import concatSameStyles from './concatSameStyles';
 
-const TextStylesSwitcher = ({ articleState }) => {
+import s from './styles.module.scss';
+// ToDo: fix duble click returns undefinden from selectionChange
+const TextStylesSwitcher = ({ articleState, setArticleState }) => {
   const [selection, setSelection] = useState();
 
   const ejectStyles = (articleState, selection, ejectingStyles) => {
-    const { nodeAddress, selectedRange } = selection;
+    if (!selection) return;
+    const { selectedRange } = selection;
+    if (selectedRange[0].length < 4) return;
     
-    const firstSelected = selectedRange[0];
-    const lastSelected = selectedRange[1];
-    
-    const nodeCopy = {...articleState.article[firstSelected[0]].content[firstSelected[1]]};
+    const stateCopy = {...articleState};
 
-    if (firstSelected[1] === lastSelected[1]) {
-      if (nodeCopy.styles) {
-        const newStyles = [];
+    for (let i=selectedRange[0][0]; i<=selectedRange[1][0]; i++) {
+      if (stateCopy.article[i].type !== 'text') continue;
+      
+      const content = stateCopy.article[i].content;
+      
+      if (i === selectedRange[0][0]) {
+        // selection only inside the paragraph
+        if (selectedRange[0][0] === selectedRange[1][0]) {
+          for (let j=selectedRange[0][1]; j<=selectedRange[1][1]; j++) {
+            if (content[j] !== br) {
+              if (j === selectedRange[0][1] && j === selectedRange[1][1]) {
+                content[j] = updateNode({
+                  nodeCopy: {...content[j]},
+                  aL: selectedRange[0][3],
+                  aR: selectedRange[1][3],
+                  ejectingStyles,
+                })
+                continue;
+              }
 
-        for (let i=0; i<nodeCopy.styles.length; i++) {
-          const currentStyle = nodeCopy.styles[i];
-          
-          const aL = firstSelected[3];
-          const aR = lastSelected[3];
+              if (j === selectedRange[0][1]) {
+                content[j] = updateNode({
+                  nodeCopy: {...content[j]},
+                  aL: selectedRange[0][3],
+                  aR: content[j].text.length,
+                  ejectingStyles,
+                })
+                continue;
+              }
 
-          const bL = currentStyle.range[0];
-          const bR = currentStyle.range[1];
+              if (j < selectedRange[1][1]) {
+                content[j] = updateNode({
+                  nodeCopy: {...content[j]},
+                  aL: 0,
+                  aR: content[j].text.length,
+                  ejectingStyles,
+                })
+                continue;
+              }
 
-          if (aR <= bL) {
-            newStyles.push(currentStyle);
-            continue;
+              if (j === selectedRange[1][1]) {
+                content[j] = updateNode({
+                  nodeCopy: {...content[j]},
+                  aL: 0,
+                  aR: selectedRange[1][3],
+                  ejectingStyles,
+                })
+                continue;
+              }
+            }
           }
-
-          if (bR <= aL) {
-            newStyles.push(currentStyle);
-            continue;
+        } else {
+          // selection not only inside the paragraph
+          for (let j=selectedRange[0][1]; j<content.length; j++) {
+            const node = content[j];
+            if (node !== br) {
+              if (j === selectedRange[0][1]) {
+                content[j] = updateNode({
+                  nodeCopy: {...content[j]},
+                  aL: selectedRange[0][3],
+                  aR: content[j].text.length,
+                  ejectingStyles,
+                })
+                continue;
+              } else {
+                content[j] = updateNode({
+                  nodeCopy: {...content[j]},
+                  aL: 0,
+                  aR: content[j].text.length,
+                  ejectingStyles,
+                })
+                continue;
+              }
+            }
           }
-          
-          if (bL <= aL && aR <= bR) {
-            if (bL !== aL) newStyles.push({
-              ...currentStyle,
-              range: [bL, aL]
-            })
+        }
+        continue;
+      }
 
-            newStyles.push({
-              ...currentStyle,
-              style: {
-                ...currentStyle.style,
-                ...ejectingStyles,
-              },
-              range: [aL, aR]
-            })
-
-            if (aR !== bR) newStyles.push({
-              ...currentStyle,
-              range: [aR, bR]
-            })
-          }
-
-          // a - selected range, b - current style range
-          //              aL ____ aR
-          //       bL ________ bR
-
-          if (bL < aL && aL < bR && bR < aR) {
-            newStyles.push({
-              ...currentStyle,
-              range: [bL, aL],
-            })
-            newStyles.push({
-              ...currentStyle,
-              style: {
-                ...currentStyle.style,
-                ...ejectingStyles,
-              },
-              range: [aL, bR],
-            })
-          }
-
-          if (aL < bL && aR > bL && aR < bR) {
-            newStyles.push({
-              ...currentStyle,
-              style: {
-                ...currentStyle.style,
-                ...ejectingStyles,
-              },
-              range: [bL, aR],
-            })
-            newStyles.push({
-              ...currentStyle,
-              range: [aR, bR],
+      // selection overlap the paragraph with both sides
+      if (i < selectedRange[1][0]) {
+        for (let j=0; j<content.length; j++) {
+          const node = content[j];
+          if (node !== br) {
+            content[j] = updateNode({
+              nodeCopy: {...content[j]},
+              aL: 0,
+              aR: content[j].text.length,
+              ejectingStyles,
             })
           }
         }
+        continue;
+      }
 
-        console.log(newStyles)
+      // selection selection overlap top of paragraph
+      if (i === selectedRange[1][0]) {
+        for (let j=0; j<= selectedRange[1][1]; j++) {
+          const node = content[j];
+          if (node !== br) {
+            if (j === selectedRange[1][1]) {
+              content[j] = updateNode({
+                nodeCopy: {...content[j]},
+                aL: 0,
+                aR: selectedRange[1][3],
+                ejectingStyles,
+              })
+              continue;
+            } else {
+              content[j] = updateNode({
+                nodeCopy: {...content[j]},
+                aL: 0,
+                aR: content[j].text.length,
+                ejectingStyles,
+              })
+              continue;
+            }
+          }
+        }
       }
     }
+
+    let newCaretPosition = {
+      offset: [],
+      selectedRange: [],
+    };
+
+    const firstSelectedNode = stateCopy.article[selectedRange[0][0]].content[selectedRange[0][1]];
+    const lastSelectedNode = stateCopy.article[selectedRange[1][0]].content[selectedRange[1][1]];
+    
+    for (let i=0; i<firstSelectedNode.styles.length; i++) {
+      const style = firstSelectedNode.styles[i];
+     
+      if (style.range[1] > selectedRange[0][3]) {
+        newCaretPosition.selectedRange.push([selectedRange[0][0], selectedRange[0][1], i, selectedRange[0][3]]);
+        newCaretPosition.offset.push(selectedRange[0][3] - style.range[0])
+        break;
+      }
+    }
+    
+    for (let i=1; i<lastSelectedNode.styles.length; i++) {
+      const style = lastSelectedNode.styles[i];
+      const prevStyle = lastSelectedNode.styles[i-1];
+
+      if (i === lastSelectedNode.styles.length - 1) {
+        newCaretPosition.selectedRange.push([selectedRange[1][0], selectedRange[1][1], i, selectedRange[1][3]]);
+        newCaretPosition.offset.push(selectedRange[1][3] - style.range[0]);
+        break;
+      }
+
+      if (style.range[1] > selectedRange[1][3]) {
+        newCaretPosition.selectedRange.push([selectedRange[1][0], selectedRange[1][1], i-1, selectedRange[1][3]]);
+        newCaretPosition.offset.push(selectedRange[1][3] - prevStyle.range[0]);
+        break;
+      }
+    }
+    
+    setArticleState({
+      ...stateCopy,
+      caretPosition: newCaretPosition,
+    })
   }
 
   const bold = () => {
-    ejectStyles(articleState, selection, { fontWeight: 'bold'})
+    ejectStyles(articleState, selection, { fontWeight: 'bold' })
+  }
+
+  const italic = () => {
+    ejectStyles(articleState, selection, { fontStyle: 'italic' })
   }
 
   const onSelectionChange = () => {
@@ -112,7 +198,10 @@ const TextStylesSwitcher = ({ articleState }) => {
   return (
     <div className={s.container}>
       <button onClick={bold}>
-        bold
+        B
+      </button>
+      <button onClick={italic}>
+        i
       </button>
     </div>
   )

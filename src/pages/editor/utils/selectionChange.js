@@ -78,19 +78,20 @@ const selectionChange = () => {
     }
   }
 
-  let sortedSelectedRange = null;
+  const selectedRangeCopy = [...selectedRange]
 
   if (selectedRange[0][1] === selectedRange[1][1]) {
-    sortedSelectedRange = selectedRange.sort((a, b) => a[3] - b[3])
+    selectedRange.sort((a, b) => a[3] - b[3])
   } else {
-    sortedSelectedRange = selectedRange.sort((a, b) => a[1] - b[1]).sort((a, b) => a[0] - b[0]);
+    selectedRange.sort((a, b) => a[1] - b[1]).sort((a, b) => a[0] - b[0]);
   }
 
   return {
     offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
     selection,
-    nodeAddress: sortedSelectedRange[0].slice(0, 3),
-    selectedRange: sortedSelectedRange,
+    nodeAddress: selectedRange[0].slice(0, 3),
+    selectedRange: selectedRange,
+    fromLeftToRight: selectedRangeCopy[0][3] < selectedRangeCopy[1][3],
   }
 }
 
