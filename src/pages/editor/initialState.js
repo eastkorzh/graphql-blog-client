@@ -78,6 +78,10 @@ const initialState = {
         },
       ],
     },
+    {
+      type: 'img',
+      src: './1.jpg',
+    },
     { 
       type: 'text',
       content: [

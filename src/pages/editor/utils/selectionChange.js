@@ -19,7 +19,15 @@ const getNodeWithDataset = (anchorNode, dataset = 'index') => {
 }
 
 const selectionChange = () => {
-  const { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
+  let { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
+  
+  // prevent bug when double click on text node makes focusNode return whole paragraph
+  if (focusNode && !focusNode.data && anchorNode.data) {
+    const { nodeWithDataset: anchorWithRootDataset } = getNodeWithDataset(anchorNode);
+    
+    focusNode = anchorWithRootDataset.lastChild.lastChild;
+    focusOffset = anchorWithRootDataset.lastChild.lastChild.data.length;
+  }
 
   if (anchorNode === null || !anchorNode.data || focusNode === null || !focusNode.data) return;
   if (anchorNode.parentNode.localName === 'button') return;
@@ -33,8 +41,8 @@ const selectionChange = () => {
     }
   }
 
-  const { nodeWithDataset: anchorWithRootDataset} = getNodeWithDataset(anchorNode);
-  const { nodeWithDataset: focusWithRootDataset} = getNodeWithDataset(focusNode);
+  const { nodeWithDataset: anchorWithRootDataset } = getNodeWithDataset(anchorNode);
+  const { nodeWithDataset: focusWithRootDataset } = getNodeWithDataset(focusNode);
   const { nodeWithDataset: anchorWithDataset } = getNodeWithDataset(anchorNode, 'spanindex');
   const { nodeWithDataset: focusWithDataset } = getNodeWithDataset(focusNode, 'spanindex');
 
@@ -85,7 +93,7 @@ const selectionChange = () => {
   } else {
     selectedRange.sort((a, b) => a[1] - b[1]).sort((a, b) => a[0] - b[0]);
   }
-
+  
   return {
     offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
     selection,

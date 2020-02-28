@@ -147,7 +147,7 @@ const TextStylesSwitcher = ({ articleState, setArticleState }) => {
 
     const firstSelectedNode = stateCopy.article[selectedRange[0][0]].content[selectedRange[0][1]];
     const lastSelectedNode = stateCopy.article[selectedRange[1][0]].content[selectedRange[1][1]];
-    
+
     for (let i=0; i<firstSelectedNode.styles.length; i++) {
       const style = firstSelectedNode.styles[i];
      
@@ -158,9 +158,9 @@ const TextStylesSwitcher = ({ articleState, setArticleState }) => {
       }
     }
     
-    for (let i=1; i<lastSelectedNode.styles.length; i++) {
+    for (let i=0; i<lastSelectedNode.styles.length; i++) {
       const style = lastSelectedNode.styles[i];
-      const prevStyle = lastSelectedNode.styles[i-1];
+      const prevStyle = i && lastSelectedNode.styles[i-1];
 
       if (i === lastSelectedNode.styles.length - 1) {
         newCaretPosition.selectedRange.push([selectedRange[1][0], selectedRange[1][1], i, selectedRange[1][3]]);

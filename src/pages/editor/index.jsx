@@ -47,7 +47,7 @@ const Editor = () => {
           .childNodes[selectedRange[1][0]]
           .childNodes[selectedRange[1][1]]
           .childNodes[selectedRange[1][2]]
-
+        
         range.setStart(caretNodeStart.lastChild, offset[0]);
         range.setEnd(caretNodeEnd.lastChild, offset[1]);
 
@@ -69,6 +69,7 @@ const Editor = () => {
   }, [articleState, articleRef])
 
   const onArticleChange = () => {
+    console.log('anArtCH')
     const result = {
       ...articleState,
       article: []
@@ -85,48 +86,49 @@ const Editor = () => {
         content: []
       }
 
+      if (node.localName === 'img') {
+        result.article.push({
+          type: 'img',
+          src: './1.jpg',
+        })
+
+        continue;
+      }
+
       // itarate paragraphs text blocks
       for (let childNode of node.childNodes) {
         if (childNode.localName === 'span') {
-          if (childNode.childNodes.length > 1) {
-            const styles = [];
-            let offset = 0;
+          const styles = [];
+          let offset = 0;
 
-            // iterate text blocks spans
-            for (let styledNode of childNode.childNodes) {
-              const { fontWeight, fontStyle } = styledNode.style;
-              
-              styles.push({
-                style: {
-                  fontWeight,
-                  fontStyle,
-                },
-                range: [offset, offset+styledNode.textContent.length]
-              })
-              offset += styledNode.textContent.length;
-            }
-
-            paragraph.content.push({
-              text: childNode.textContent,
-              styles,
+          // iterate text blocks spans
+          for (let styledNode of childNode.childNodes) {
+            const { fontWeight, fontStyle } = styledNode.style;
+            //console.log(styledNode.style.length)
+            styles.push({
+              style: {
+                fontWeight,
+                fontStyle,
+              },
+              range: [offset, offset+styledNode.textContent.length]
             })
-          } else {
-            paragraph.content.push({
-              text: childNode.textContent,
-              styles: null
-            })
+            offset += styledNode.textContent.length;
           }
-        } 
-  
+          
+          paragraph.content.push({
+            text: childNode.textContent,
+            styles,
+          })
+        }
+
         if (childNode.localName === 'br') {
           paragraph.content.push(br)
         }
       }
-
       result.article.push(paragraph)
       result.caretPosition = selectionChange()
     }
-    
+   
     setArticleState(result)
     
     // prevent caret blinking at offset 0 after rerender
@@ -291,6 +293,11 @@ const Editor = () => {
           ref={articleRef}
         >
           {articleState && articleState.article.map((item, index) => {
+            if (item.type === 'img') {
+              return (
+                <img style={{ maxWidth: '100%'}} src={require(`${item.src}`)} alt=""/>
+              )
+            }
             if (item.type === 'text') {
               return (
                 <p data-index={index} key={index}>
