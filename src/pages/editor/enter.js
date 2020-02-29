@@ -1,3 +1,4 @@
+import shortid from 'shortid';
 
 import { br, zws } from './constants';
 
@@ -77,11 +78,13 @@ const enter = ({ articleState, selection, nodeAddress }) => {
       }
       
       result.push({
+        id: paragraph.id,
         type: 'text',
         content: firstPartContent,
       });       
       
       result.push({
+        id: shortid.generate(),
         type: 'text',
         content: lastPartContent,
       });

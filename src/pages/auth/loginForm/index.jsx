@@ -64,7 +64,7 @@ const LoginForm = ({ history }) => {
     if (data && data.login.token) {
       localStorage.token = data.login.token;
       localStorage.email = data.login.email;
-
+      
       history.push('/');
     };
   }, [data])

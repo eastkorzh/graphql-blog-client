@@ -100,6 +100,7 @@ const deleteSelected = ({ articleState, selectedRange, offset }) => {
         newContent.push(lastContent[j])
       }
       result.push({
+        id: articleState.article[i].id,
         type: 'text',
         content: newContent
       })

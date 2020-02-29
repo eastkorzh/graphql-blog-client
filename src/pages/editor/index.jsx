@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createRef } from 'react';
 import cx from 'classnames';
+import shortid from 'shortid';
 
 import { br, zws } from './constants';
 import selectionChange from './utils/selectionChange';
@@ -15,17 +16,18 @@ import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  const [articleState, setArticleState] = useState(initialState);
-  // const [articleState, setArticleState] = useState({
-  //   h1: zws,
-  //   article: [{
-  //     type: 'text',
-  //     content: [{
-  //       text: zws,
-  //       styles: null
-  //     }]
-  //   }]
-  // });
+  //const [articleState, setArticleState] = useState(initialState);
+  const [articleState, setArticleState] = useState({
+    h1: zws,
+    article: [{
+      id: shortid.generate(),
+      type: 'text',
+      content: [{
+        text: zws,
+        styles: null
+      }]
+    }]
+  });
   const articleRef = createRef();
   const headerRef = createRef();
 
@@ -69,7 +71,6 @@ const Editor = () => {
   }, [articleState, articleRef])
 
   const onArticleChange = () => {
-    console.log('anArtCH')
     const result = {
       ...articleState,
       article: []
@@ -82,12 +83,14 @@ const Editor = () => {
     // iterate paragraphs
     for (let node of articleRef.current.childNodes) {
       const paragraph = {
+        id: node.dataset.key,
         type: 'text',
         content: []
       }
 
       if (node.localName === 'img') {
         result.article.push({
+          id: node.dataset.key,
           type: 'img',
           src: './1.jpg',
         })
@@ -98,26 +101,31 @@ const Editor = () => {
       // itarate paragraphs text blocks
       for (let childNode of node.childNodes) {
         if (childNode.localName === 'span') {
-          const styles = [];
+          let styles = [];
           let offset = 0;
 
           // iterate text blocks spans
           for (let styledNode of childNode.childNodes) {
             const { fontWeight, fontStyle } = styledNode.style;
-            //console.log(styledNode.style.length)
-            styles.push({
-              style: {
-                fontWeight,
-                fontStyle,
-              },
-              range: [offset, offset+styledNode.textContent.length]
-            })
-            offset += styledNode.textContent.length;
+            
+            if (!styledNode.style.length && childNode.childNodes.length === 1) {
+              styles = null;
+            } else {
+              styles.push({
+                style: {
+                  fontWeight,
+                  fontStyle,
+                },
+                range: [offset, offset+styledNode.textContent.length]
+              })
+              offset += styledNode.textContent.length;
+            }
           }
           
           paragraph.content.push({
             text: childNode.textContent,
             styles,
+            id: childNode.dataset.key,
           })
         }
 
@@ -295,12 +303,12 @@ const Editor = () => {
           {articleState && articleState.article.map((item, index) => {
             if (item.type === 'img') {
               return (
-                <img style={{ maxWidth: '100%'}} src={require(`${item.src}`)} alt=""/>
+                <img key={item.id} data-key={item.id} style={{ maxWidth: '100%'}} src={require(`${item.src}`)} alt=""/>
               )
             }
             if (item.type === 'text') {
               return (
-                <p data-index={index} key={index}>
+                <p data-index={index} key={item.id} data-key={item.id}>
                   {item.content.map((contentItem, contentIndex) => {
                     if (contentItem === br) {
                       return <br key={contentIndex}/>
@@ -311,7 +319,8 @@ const Editor = () => {
                         for (let i=0; i<styles.length; i++) {
                           result.push(
                             <span 
-                              key={i} 
+                              key={`${item.id}-${contentIndex}-${i}`} 
+                              data-key={`${item.id}-${contentIndex}-${i}`}
                               data-spanindex={[index, contentIndex, i]} 
                               style={styles[i].style}
                             >
@@ -335,7 +344,8 @@ const Editor = () => {
                         <span 
                           data-index={index} 
                           data-contentindex={contentIndex}
-                          key={contentIndex}
+                          key={`${item.id}-${contentIndex}`} 
+                          data-key={`${item.id}-${contentIndex}`}
                         >
                           {result}
                         </span>

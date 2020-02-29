@@ -8,22 +8,28 @@ import { ApolloProvider } from '@apollo/react-hooks';
 import { ApolloClient } from 'apollo-client';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { createUploadLink } from 'apollo-upload-client';
+import { setContext } from 'apollo-link-context';
 
 import routes from './routes';
 import history from "./history";
 import 'styles/index.css';
 import theme from 'styles/theme';
 
+const aploadLink = createUploadLink({ uri: `http://localhost:${process.env.REACT_APP_PORT || 4000}/` });
+
+const authLink = setContext((_, { headers }) => {
+  const token = localStorage.getItem('token');
+  // return the headers to the context so httpLink can read them
+  return {
+    headers: {
+      ...headers,
+      authorization: token ? `${token}` : "",
+    }
+  }
+});
+
 const client = new ApolloClient({
-  request: (operation) => {
-    const token = localStorage.getItem('token');
-    operation.setContext({
-      headers: {
-        authorization: token || ''
-      }
-    });
-  },
-  link: createUploadLink({ uri: `http://localhost:${process.env.REACT_APP_PORT || 4000}/` }),
+  link: authLink.concat(aploadLink),
   cache: new InMemoryCache(),
 });
 

@@ -67,6 +67,7 @@ const shiftEnter = ({ articleState, selection, nodeAddress }) => {
       }
       
       result.push({
+        id: paragraph.id,
         type: 'text',
         content: newContent,
       })
