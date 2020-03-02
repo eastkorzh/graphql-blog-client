@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@apollo/react-hooks';
 import { gql } from 'apollo-boost';
@@ -14,6 +14,7 @@ const LOGGED_USER = gql`
       _id
       name
       email
+      avatar
     }
   }
 `
@@ -22,6 +23,10 @@ const AboutUser = () => {
   const [isExpended, setExpended] = useState(false);
 
   const { data, loading } = useQuery(LOGGED_USER);
+
+  const logout = () => {
+    localStorage.token = '';
+  }
 
   return (
     <>
@@ -37,6 +42,7 @@ const AboutUser = () => {
               <Avatar 
                 name={data.me.name}
                 size='scale1000'
+                src={data.me.avatar}
               />
             </div>
             {isExpended &&
@@ -46,10 +52,17 @@ const AboutUser = () => {
                   <Avatar 
                     name={data.me.name}
                     size='scale1000'
+                    src={data.me.avatar}
                   />
                 </div>
-                <div className={s.item}>Settings</div>
-                <div className={s.item}>Log Out</div>
+                <div className={s.buttons}>
+                  <Link to='/account'>
+                    <div className={s.item}>Account</div>
+                  </Link>
+                  <Link to='/auth' onClick={logout}>
+                    <div className={s.item}>Log Out</div>
+                  </Link>
+                </div>
               </div>
             }
           </div> :

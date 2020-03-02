@@ -16,18 +16,18 @@ import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  //const [articleState, setArticleState] = useState(initialState);
-  const [articleState, setArticleState] = useState({
-    h1: zws,
-    article: [{
-      id: shortid.generate(),
-      type: 'text',
-      content: [{
-        text: zws,
-        styles: null
-      }]
-    }]
-  });
+  const [articleState, setArticleState] = useState(initialState);
+  // const [articleState, setArticleState] = useState({
+  //   h1: zws,
+  //   article: [{
+  //     id: shortid.generate(),
+  //     type: 'text',
+  //     content: [{
+  //       text: zws,
+  //       styles: null
+  //     }]
+  //   }]
+  // });
   const articleRef = createRef();
   const headerRef = createRef();
 
@@ -303,7 +303,14 @@ const Editor = () => {
           {articleState && articleState.article.map((item, index) => {
             if (item.type === 'img') {
               return (
-                <img key={item.id} data-key={item.id} style={{ maxWidth: '100%'}} src={require(`${item.src}`)} alt=""/>
+                <img 
+                  key={item.id} 
+                  data-key={item.id} 
+                  style={{ maxWidth: '100%'}} 
+                  src={require(`${item.src}`)} 
+                  alt=""
+                  contentEditable={false} 
+                />
               )
             }
             if (item.type === 'text') {
