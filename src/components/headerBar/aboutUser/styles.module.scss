@@ -2,23 +2,45 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  margin-right: 10px;
   .collapsed {
     display: flex;
     align-items: center;
     .name {
       margin-right: 10px;
+      font-weight: 800;
+      font-size: 18px;
     }
   }
   &:hover {
     .expendedInfo {
       position: absolute;
-      top: -10px;
+      top: -15px;
       left: -15px;
       background: #353535;
-      padding: 10px 15px;
+      padding: 15px 0px 0px 0px;
       border-radius: 5px;
+      .collapsed {
+        padding: 0px 15px;
+      }
+      .buttons {
+        margin-top: 15px;
+        a {
+          &:last-child .item {
+            border-radius: 0 0 5px 5px;
+          }
+        }
+        .item {
+          border-top: 1px solid #5c5c5c;
+          padding: 0 15px;
+          cursor: pointer;
+          &:hover {
+            background-color: #5c5c5c;
+          }
+        }
+      }
       .collapsed ~ div {
-        line-height: 30px;
+        line-height: 40px;
       }
     }
   }

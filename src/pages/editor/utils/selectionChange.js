@@ -20,7 +20,7 @@ const getNodeWithDataset = (anchorNode, dataset = 'index') => {
 
 const selectionChange = () => {
   let { anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed } = document.getSelection();
-  
+
   // prevent bug when double click on text node makes focusNode return whole paragraph
   if (focusNode && !focusNode.data && anchorNode.data) {
     const { nodeWithDataset: anchorWithRootDataset } = getNodeWithDataset(anchorNode);
