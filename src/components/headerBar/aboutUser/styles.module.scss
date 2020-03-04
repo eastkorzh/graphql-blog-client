@@ -6,6 +6,7 @@
   .collapsed {
     display: flex;
     align-items: center;
+    padding: 0px 15px;
     .name {
       margin-right: 10px;
       font-weight: 800;
@@ -16,13 +17,10 @@
     .expendedInfo {
       position: absolute;
       top: -15px;
-      left: -15px;
+      left: 0px;
       background: #353535;
       padding: 15px 0px 0px 0px;
       border-radius: 5px;
-      .collapsed {
-        padding: 0px 15px;
-      }
       .buttons {
         margin-top: 15px;
         a {
