@@ -1,0 +1,31 @@
+.container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgb(209, 209, 209);
+  border-radius: 9999px;
+  overflow: hidden;
+  cursor: pointer;
+  &:hover {
+    .edit {
+      opacity: .7;
+    }
+  }
+  .edit {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    background: rgb(30, 30, 30)
+  }
+  .avatar {
+    color: #1E1E1E;
+    img {
+      width: 100%;
+    }
+  }
+}

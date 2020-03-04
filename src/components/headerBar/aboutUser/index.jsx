@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useApolloClient } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/react-hooks';
 import { gql } from 'apollo-boost';
 import { Button } from 'baseui/button';
 import { Avatar } from 'baseui/avatar';
@@ -11,7 +11,6 @@ import s from './styles.module.scss';
 const LOGGED_USER = gql`
   query getLoggedUser {
     me {
-      _id
       name
       email
       avatar
@@ -21,9 +20,8 @@ const LOGGED_USER = gql`
 
 const AboutUser = () => {
   const [isExpended, setExpended] = useState(false);
-  const client = useApolloClient();
 
-  const { data, loading } = useQuery(LOGGED_USER);
+  const { data, loading, client } = useQuery(LOGGED_USER);
 
   const logout = () => {
     localStorage.token = '';
