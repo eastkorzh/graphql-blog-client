@@ -3,8 +3,10 @@ import { useMutation, useQuery } from '@apollo/react-hooks';
 import { gql } from 'apollo-boost';
 import { validate as validateEmail } from 'email-validator';
 
+import Close from 'baseui/icon/delete';
 import Input from 'components/input';
-import {Button} from 'baseui/button';
+import { Button } from 'baseui/button';
+import { Notification, KIND } from 'baseui/notification';
 import ErrorMessage from 'components/errorMessage';
 import { FormControl } from 'baseui/form-control';
 import EditableAvatar from 'components/editableAvatar';
@@ -43,10 +45,27 @@ const UPDATE_USER_EMAIL = gql`
   }
 `
 
-const AccountSettings = () => {
+const UPDATE_USER_PASSWORD = gql`
+  mutation updateUserPassword(
+    $oldPassword: String!
+    $newPassword: String!
+  ) {
+    updateUserPassword(
+      oldPassword: $oldPassword
+      newPassword:$newPassword
+    ) {
+      _id
+      name
+      email
+    }
+  }
+`
+
+const AccountSettings = ({ history }) => {
   const { data: userData, loading: userDataLoading, client } = useQuery(LOGGED_USER);
   const [ updateUserName, { data: newUserName, error: updateNameError, loading: userNameUpdating }] = useMutation(UPDATE_USER_NAME);
   const [ updateUserEmail, { data: newUserEmail, error: updateEmailError, loading: userEmailUpdating }] = useMutation(UPDATE_USER_EMAIL);
+  const [ updateUserPassword, { data: newUserPassword, error: updatePasswordError, loading: userPasswordUpdating }] = useMutation(UPDATE_USER_PASSWORD);
 
   const [value, setValue] = useState({
     name: '',
@@ -96,6 +115,17 @@ const AccountSettings = () => {
     }
   }, [newUserEmail])
 
+  useEffect(() => {
+    if (newUserPassword) {
+      setValue({
+        ...value,
+        currPassvord: '',
+        newPassword: '',
+        newPasswordAgain: '',
+      })
+    }
+  }, [newUserPassword])
+
   const updateUser = (prop) => {
     if (prop === 'name') {
       const isValidName = value.name.length >= 2;
@@ -132,8 +162,31 @@ const AccountSettings = () => {
     }
   }
 
+  const changePassword = () => {
+    const isValidCurrentPassword = value.currPassvord.length >= 6;
+    const isValidNewPasssword = value.newPassword.length >= 6;
+    const isValidNewPasswordAgain = value.newPassword === value.newPasswordAgain;
+
+    setValid({
+      ...isValid,
+      currPassvord: isValidCurrentPassword,
+      newPassword: isValidNewPasssword && isValidNewPasswordAgain,
+      newPasswordAgain: isValidNewPasswordAgain,
+    })
+
+    if (isValidCurrentPassword && isValidNewPasssword && isValidNewPasswordAgain) {
+      updateUserPassword({ variables: {
+        oldPassword: value.currPassvord,
+        newPassword: value.newPassword,
+      }}).catch(() => null)
+    }
+  }
+
   return (
     <div className={s.container}>
+      <div className={s.close} onClick={() => history.goBack()}>
+        <Close size={60} />
+      </div>
       <div className={s.content}>
         <EditableAvatar size='170px' />
         <div className={s.forms}>
@@ -188,8 +241,52 @@ const AccountSettings = () => {
             </Button>
           </div>
         </div>
+        <form 
+          className={s.passwordForm}
+          onSubmit={e => {
+            e.preventDefault()
+            changePassword()
+          }}
+        >
+          <FormControl
+            label='Current Password'
+          >
+            <Input 
+              value={value.currPassvord}
+              onChange={e => setValue({...value, currPassvord: e.target.value})}
+              error={!isValid.currPassvord}
+              type='password' 
+            />
+          </FormControl>
+          <FormControl
+            label='New Password'
+          >
+            <Input 
+              value={value.newPassword}
+              onChange={e => setValue({...value, newPassword: e.target.value})}
+              error={!isValid.newPassword}
+              type='password' 
+            />
+          </FormControl>
+          <FormControl
+            label='New Password again'
+          >
+            <Input 
+              value={value.newPasswordAgain}
+              onChange={e => setValue({...value, newPasswordAgain: e.target.value})}
+              error={!isValid.newPasswordAgain}
+              type='password' 
+            />
+          </FormControl>
+          <Button type='submit' isLoading={userPasswordUpdating}>Change Password</Button>
+        </form>
       </div>
-      <ErrorMessage error={updateNameError || updateEmailError} />
+      {newUserPassword &&
+        <Notification kind={KIND.positive} closeable>
+          Password changed
+        </Notification>
+      }
+      <ErrorMessage error={updateNameError || updateEmailError || updatePasswordError} />
     </div>
   )
 }

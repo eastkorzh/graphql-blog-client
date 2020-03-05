@@ -2,17 +2,29 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  .close {
+    position: absolute;
+    right: 30px;
+    top: 30px;
+    cursor: pointer;
+  }
   .content {
     margin-top: 10vh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 300px;
     .forms {
       margin-top: 20px;
       .inputBlock {
         display: flex;
-        width: 300px
       }
     }   
+    .passwordForm {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
   }
 }
