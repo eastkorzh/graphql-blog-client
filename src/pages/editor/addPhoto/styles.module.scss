@@ -1,0 +1,16 @@
+.container {
+  position: absolute;
+  left: -40px;
+  width: 25px;
+  opacity: .3;
+  transition: top 150ms;
+  &:hover {
+    opacity: .7;
+  }
+  &:active {
+    opacity: .9;
+  }
+  img {
+    width: 100%;
+  }
+}

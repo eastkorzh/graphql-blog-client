@@ -4,7 +4,7 @@ import shortid from 'shortid';
 
 import { br, zws } from './constants';
 import selectionChange from './utils/selectionChange';
-import initialState from './initialState';
+import initialState1 from './initialState1';
 
 import insertText from './insertText';
 import deleteSelected from './deleteSelected';
@@ -12,22 +12,23 @@ import shiftEnter from './shiftEnter';
 import enter from './enter';
 import backspace from './backspace';
 
+import AddPhoto from './addPhoto';
 import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  const [articleState, setArticleState] = useState(initialState);
-  // const [articleState, setArticleState] = useState({
-  //   h1: zws,
-  //   article: [{
-  //     id: shortid.generate(),
-  //     type: 'text',
-  //     content: [{
-  //       text: zws,
-  //       styles: null
-  //     }]
-  //   }]
-  // });
+  //const [articleState, setArticleState] = useState(initialState1);
+  const [articleState, setArticleState] = useState({
+    h1: zws,
+    article: [{
+      id: shortid.generate(),
+      type: 'text',
+      content: [{
+        text: zws,
+        styles: null
+      }]
+    }]
+  });
   const articleRef = createRef();
   const headerRef = createRef();
 
@@ -92,7 +93,7 @@ const Editor = () => {
         result.article.push({
           id: node.dataset.key,
           type: 'img',
-          src: './1.jpg',
+          src: node.src,
         })
 
         continue;
@@ -284,6 +285,7 @@ const Editor = () => {
         onKeyDown={onKeyDown}
         onDragStart={e => e.preventDefault()}
       >
+        <AddPhoto articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
         {articleState && 
           <h1
             className={cx({ [s.emptyH1]: (articleState.h1 === zws) })}
@@ -307,7 +309,7 @@ const Editor = () => {
                   key={item.id} 
                   data-key={item.id} 
                   style={{ maxWidth: '100%'}} 
-                  src={require(`${item.src}`)} 
+                  src={item.src} 
                   alt=""
                   contentEditable={false} 
                 />

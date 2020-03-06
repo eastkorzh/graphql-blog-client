@@ -9,6 +9,7 @@ const HeaderBar = () => {
     <nav className={s.navs}>
       <Link to='/'>Feed</Link>
       <Link to='/'>My posts</Link>
+      <Link to='/editor'>Make Post</Link>
     </nav>
   )
 
