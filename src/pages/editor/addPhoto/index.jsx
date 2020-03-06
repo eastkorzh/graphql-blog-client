@@ -77,7 +77,8 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
 
       for (let i=0; i<=stateCopy.article.length; i++) {
         const node = stateCopy.article[i];
-        if (!node) break;
+        
+        if (!node && i !== stateCopy.article.length) break;
 
         if (i === nodeAddress[0]+1) {
           nweState.article.push({
@@ -96,7 +97,7 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
         }
 
         if (i !== nodeAddress[0]) {
-          nweState.article.push(node)
+          if (node) nweState.article.push(node)
         } else {
           nweState.article.push({
             id: shortid.generate(),

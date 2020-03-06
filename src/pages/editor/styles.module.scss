@@ -26,6 +26,25 @@
     }
     article {
       outline: none;
+      .image {
+        position: relative;
+        .delete {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          width: 40px;
+          height: 40px;
+          border-radius: 9999px;
+          background-color: rgba(109, 109, 109, 0.637);
+          display: none;
+          cursor: pointer;
+        }
+        &:hover .delete{
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+      }
       .emptySpan:before {
         content: attr(data-placeholder);
         position: absolute;

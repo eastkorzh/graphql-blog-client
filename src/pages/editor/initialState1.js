@@ -68,11 +68,11 @@ const initialState = {
         },
       ],
     },
-    // {
-    //   id: 'aklsd',
-    //   type: 'img',
-    //   src: './1.jpg',
-    // },
+    {
+      id: 'aklsd',
+      type: 'img',
+      src: 'blob:http://localhost:3000/223bbf80-8f40-47cc-adbf-062c0896ac87',
+    },
     { 
       id: 'kasfv',
       type: 'text',

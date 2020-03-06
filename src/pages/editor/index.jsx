@@ -12,6 +12,7 @@ import shiftEnter from './shiftEnter';
 import enter from './enter';
 import backspace from './backspace';
 
+import Close from 'baseui/icon/delete';
 import AddPhoto from './addPhoto';
 import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
@@ -89,11 +90,20 @@ const Editor = () => {
         content: []
       }
 
-      if (node.localName === 'img') {
+      if (node.dataset.role === 'img') {
+        let img = null;
+
+        for (let item of node.childNodes) {
+          if (item.localName === 'img') {
+            img = item;
+            break;
+          }
+        }
+
         result.article.push({
           id: node.dataset.key,
           type: 'img',
-          src: node.src,
+          src: img.src,
         })
 
         continue;
@@ -275,6 +285,19 @@ const Editor = () => {
       }
     }
   }
+
+  const deleteImage = (index) => {
+    const stateCopy = {...articleState};
+
+    stateCopy.article = stateCopy.article.filter((item, i) => i !== index);
+
+    setArticleState({
+      ...stateCopy,
+      caretPosition: null,
+    })
+
+    document.getSelection().collapse(null);
+  }
   
   return (
     <div className={s.container}>
@@ -305,14 +328,17 @@ const Editor = () => {
           {articleState && articleState.article.map((item, index) => {
             if (item.type === 'img') {
               return (
-                <img 
-                  key={item.id} 
-                  data-key={item.id} 
-                  style={{ maxWidth: '100%'}} 
-                  src={item.src} 
-                  alt=""
-                  contentEditable={false} 
-                />
+                <div className={s.image} key={item.id} data-key={item.id} data-role={'img'}>
+                  <div className={s.delete} onClick={() => deleteImage(index)}>
+                    <Close size={30} />
+                  </div>
+                  <img 
+                    style={{ maxWidth: '100%'}} 
+                    src={item.src} 
+                    alt=""
+                    contentEditable={false} 
+                  />
+                </div>
               )
             }
             if (item.type === 'text') {
