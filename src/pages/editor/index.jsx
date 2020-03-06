@@ -12,6 +12,7 @@ import shiftEnter from './shiftEnter';
 import enter from './enter';
 import backspace from './backspace';
 
+import { Spinner } from "baseui/spinner";
 import Close from 'baseui/icon/delete';
 import AddPhoto from './addPhoto';
 import TextStylesSwitcher from 'components/textStylesSwitcher';
@@ -332,6 +333,11 @@ const Editor = () => {
                   <div className={s.delete} onClick={() => deleteImage(index)}>
                     <Close size={30} />
                   </div>
+                  {(item.src.slice(0, 4) === 'blob') &&
+                    <div className={s.loading}>
+                      <Spinner color="#1E1E1E" />;
+                    </div>
+                  }
                   <img 
                     style={{ maxWidth: '100%'}} 
                     src={item.src} 

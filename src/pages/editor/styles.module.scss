@@ -28,6 +28,11 @@
       outline: none;
       .image {
         position: relative;
+        .loading {
+          position: absolute;
+          top: 15px;
+          left: 15px;
+        }
         .delete {
           position: absolute;
           top: 15px;

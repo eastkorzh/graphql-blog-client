@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import shortid from 'shortid';
+import { useMutation } from '@apollo/react-hooks';
+import { gql } from 'apollo-boost';
 
-import { zws } from '../constants';
+import { zws, br } from '../constants';
 import selectionChange from '../utils/selectionChange';
 import throttle from 'utils/throttle';
 import { FileUploader } from 'baseui/file-uploader';
@@ -14,10 +16,42 @@ import {
 } from 'baseui/modal';
 import s from './styles.module.scss';
 
+const ADD_PHOTO = gql`
+  mutation addPhoto(
+    $file: Upload!
+    $id: ID!
+  ) {
+    addPhoto(
+      file: $file
+      id: $id
+    ) {
+      url
+      id
+    }
+  }
+`;
+
 const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
   const [ isOpen, setIsOpen ] = useState(false);
   const [ emptyNodeTop, setEmptyNodeTop ] = useState(null)
   const [ nodeAddress, setNodeAddress ] = useState(null);
+  const [ uploadPhotoMutation ] = useMutation(ADD_PHOTO, {
+    onCompleted({ addPhoto }) {
+      const stateCopy = {...articleState};
+      const { id, url } = addPhoto;
+      
+      stateCopy.article = stateCopy.article.map((item) => {
+        if (item === br || item.id !== id) return item;
+
+        return {
+          ...item,
+          src: url,
+        }
+      })
+
+      setArticleState(stateCopy)
+    }
+  });
 
   const onSelectionChange = () => {
     const anchorNode = document.getSelection().anchorNode;
@@ -65,12 +99,15 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
     }
   }
 
-  const uploadPhoto = (photo) => {
+  const uploadPhoto = async (photo) => {
+    if (!nodeAddress) return;
+
     const src = window.URL.createObjectURL(photo);
-    
+    const imageId = shortid.generate();
+
     if (nodeAddress && articleState) {
       const stateCopy = {...articleState};
-      const nweState = {
+      const newState = {
         ...stateCopy,
         article: [],
       }
@@ -81,7 +118,7 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
         if (!node && i !== stateCopy.article.length) break;
 
         if (i === nodeAddress[0]+1) {
-          nweState.article.push({
+          newState.article.push({
             id: shortid.generate(),
             type: 'text',
             content: [{
@@ -89,7 +126,7 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
               styles: null,
             }],
           });
-          nweState.caretPosition = {
+          newState.caretPosition = {
             nodeAddress: [i, 0, 0],
             offset: 1,
           }
@@ -97,10 +134,10 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
         }
 
         if (i !== nodeAddress[0]) {
-          if (node) nweState.article.push(node)
+          if (node) newState.article.push(node)
         } else {
-          nweState.article.push({
-            id: shortid.generate(),
+          newState.article.push({
+            id: imageId,
             type: 'img',
             src,
           })
@@ -109,7 +146,14 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
 
       setIsOpen(false)
 
-      setArticleState(nweState);
+      setArticleState(newState);
+
+      uploadPhotoMutation({ 
+        variables: { 
+          file: photo, 
+          id: imageId 
+        }
+      })
     }
   }
 
@@ -135,12 +179,7 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
               const photo = acceptedFiles[0];
               
               uploadPhoto(photo);
-              //uploadFile({ variables: { file } }).catch(() => null)
             }}
-            // progressMessage={
-            //   avatarLoading ? `Uploading...` : ''
-            // }
-            // errorMessage={avatarError && avatarError.message}
           />
         </ModalBody>
         <ModalFooter>
