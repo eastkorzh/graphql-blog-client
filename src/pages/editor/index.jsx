@@ -19,18 +19,18 @@ import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  //const [articleState, setArticleState] = useState(initialState1);
-  const [articleState, setArticleState] = useState({
-    h1: zws,
-    article: [{
-      id: shortid.generate(),
-      type: 'text',
-      content: [{
-        text: zws,
-        styles: null
-      }]
-    }]
-  });
+  const [articleState, setArticleState] = useState(initialState1);
+  // const [articleState, setArticleState] = useState({
+  //   h1: zws,
+  //   article: [{
+  //     id: shortid.generate(),
+  //     type: 'text',
+  //     content: [{
+  //       text: zws,
+  //       styles: null
+  //     }]
+  //   }]
+  // });
   const articleRef = createRef();
   const headerRef = createRef();
 
@@ -66,7 +66,7 @@ const Editor = () => {
             .childNodes[nodeAddress[1]]
             .childNodes[nodeAddress[2]]
         }
-        
+
         caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
       }    
     }
@@ -306,6 +306,55 @@ const Editor = () => {
 
     document.getSelection().collapse(null);
   }
+
+  const paste = (e) => {
+    e.preventDefault();
+    const clipboardData = e.clipboardData.getData('text/plain');
+
+    const selected = selectionChange();
+    if (!selected) {
+      e.preventDefault();
+      document.getSelection().collapse(null)
+      return;
+    };  
+    const { offset, nodeAddress, selection, selectedRange } = selected;
+    
+    if (selectedRange[0].length > 3) {
+      const { newState, newCaretPosition } = deleteSelected({
+        articleState,
+        selectedRange,
+        offset,
+      })
+
+      const { newState: resultState, newCaretPosition: resultCaretPosition } = insertText({
+        articleState: { article: newState },
+        selection: newCaretPosition.selection,
+        text: clipboardData,
+        offset: newCaretPosition.offset,
+        nodeAddress: newCaretPosition.nodeAddress,
+      })
+  
+      setArticleState({
+        ...articleState,
+        article: resultState,
+        caretPosition: resultCaretPosition,
+      })
+    } else {
+      const { newState, newCaretPosition } = insertText({
+        articleState,
+        selection: selection,
+        text: clipboardData,
+        offset: offset,
+        nodeAddress: nodeAddress,
+      })
+  
+      setArticleState({
+        ...articleState,
+        article: newState,
+        caretPosition: newCaretPosition,
+      })
+    }
+  }
   
   return (
     <div className={s.container}>
@@ -332,6 +381,7 @@ const Editor = () => {
           contentEditable={true} 
           suppressContentEditableWarning={true}
           ref={articleRef}
+          onPaste={e => paste(e)}
         >
           {articleState && articleState.article.map((item, index) => {
             if (item.type === 'img') {
