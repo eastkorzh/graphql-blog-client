@@ -30,7 +30,8 @@ const selectionChange = () => {
   }
 
   if (anchorNode === null || !anchorNode.data || focusNode === null || !focusNode.data) return;
-  if (anchorNode.parentNode.localName === 'button') return;
+
+  if (anchorNode.parentNode.localName !== 'span') return;
 
   if (anchorNode.parentNode.localName === 'h1') {
     return {

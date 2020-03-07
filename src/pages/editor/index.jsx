@@ -157,7 +157,7 @@ const Editor = () => {
 
   const onKeyDown = (e) => {
     const localName = e.target.localName;
-
+    
     if (localName === 'h1') {
       if (e.keyCode === 13) {
         e.preventDefault()
@@ -184,7 +184,13 @@ const Editor = () => {
     }
 
     if (localName === 'article') {
-      const { offset, selection, nodeAddress, selectedRange } = selectionChange();
+      const selected = selectionChange();
+      if (!selected) {
+        e.preventDefault();
+        document.getSelection().collapse(null)
+        return;
+      };  
+      const { offset, nodeAddress, selection, selectedRange } = selected;
 
       const kyeDownReducer = (articleState, e) => {
         const isMultiselect = selectedRange[0].length !== 3;
@@ -329,7 +335,7 @@ const Editor = () => {
           {articleState && articleState.article.map((item, index) => {
             if (item.type === 'img') {
               return (
-                <div className={s.image} key={item.id} data-key={item.id} data-role={'img'}>
+                <div contentEditable={false} className={s.image} key={item.id} data-key={item.id} data-role={'img'}>
                   <div className={s.delete} onClick={() => deleteImage(index)}>
                     <Close size={30} />
                   </div>
@@ -342,7 +348,6 @@ const Editor = () => {
                     style={{ maxWidth: '100%'}} 
                     src={item.src} 
                     alt=""
-                    contentEditable={false} 
                   />
                 </div>
               )
