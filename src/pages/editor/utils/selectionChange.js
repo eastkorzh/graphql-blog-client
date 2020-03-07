@@ -31,8 +31,7 @@ const selectionChange = () => {
 
   if (anchorNode === null || !anchorNode.data || focusNode === null || !focusNode.data) return;
 
-  if (anchorNode.parentNode.localName !== 'span') return;
-
+  
   if (anchorNode.parentNode.localName === 'h1') {
     return {
       offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
@@ -41,7 +40,9 @@ const selectionChange = () => {
       selectedRange: [anchorOffset, focusOffset].sort((a, b) => a - b),
     }
   }
-
+  
+  if (anchorNode.parentNode.localName !== 'span') return;
+  
   const { nodeWithDataset: anchorWithRootDataset } = getNodeWithDataset(anchorNode);
   const { nodeWithDataset: focusWithRootDataset } = getNodeWithDataset(focusNode);
   const { nodeWithDataset: anchorWithDataset } = getNodeWithDataset(anchorNode, 'spanindex');
@@ -89,7 +90,7 @@ const selectionChange = () => {
 
   const selectedRangeCopy = [...selectedRange]
 
-  if (selectedRange[0][1] === selectedRange[1][1]) {
+  if (selectedRange[0][1] === selectedRange[1][1] && selectedRange[0][0] === selectedRange[1][0]) {
     selectedRange.sort((a, b) => a[3] - b[3])
   } else {
     selectedRange.sort((a, b) => a[1] - b[1]).sort((a, b) => a[0] - b[0]);

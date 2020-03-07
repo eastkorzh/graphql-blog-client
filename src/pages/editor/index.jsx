@@ -19,25 +19,24 @@ import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  const [articleState, setArticleState] = useState(initialState1);
-  // const [articleState, setArticleState] = useState({
-  //   h1: zws,
-  //   article: [{
-  //     id: shortid.generate(),
-  //     type: 'text',
-  //     content: [{
-  //       text: zws,
-  //       styles: null
-  //     }]
-  //   }]
-  // });
+  //const [articleState, setArticleState] = useState(initialState1);
+  const [articleState, setArticleState] = useState({
+    h1: zws,
+    article: [{
+      id: shortid.generate(),
+      type: 'text',
+      content: [{
+        text: zws,
+        styles: null
+      }]
+    }]
+  });
   const articleRef = createRef();
   const headerRef = createRef();
 
   useEffect(() => {
     if (articleState && articleState.caretPosition) {
       const { nodeAddress, offset, selectedRange } = articleState.caretPosition;
-
       let caretNode = null;
 
       if (Array.isArray(offset)) {
@@ -67,7 +66,7 @@ const Editor = () => {
             .childNodes[nodeAddress[1]]
             .childNodes[nodeAddress[2]]
         }
-      
+        
         caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
       }    
     }
@@ -148,7 +147,7 @@ const Editor = () => {
       result.article.push(paragraph)
       result.caretPosition = selectionChange()
     }
-   
+
     setArticleState(result)
     
     // prevent caret blinking at offset 0 after rerender
@@ -169,6 +168,7 @@ const Editor = () => {
             offset: 0,
           }
         })
+        return;
       }
       if (e.keyCode === 8 && e.target.textContent.length === 1) {
         e.preventDefault()
@@ -180,6 +180,7 @@ const Editor = () => {
             offset: 1,
           }
         })
+        return;
       }
     }
 

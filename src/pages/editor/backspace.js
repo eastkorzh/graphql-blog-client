@@ -1,5 +1,4 @@
 import { br, zws } from './constants';
-import deleteSelected from './deleteSelected';
 
 const backspace = ({
   articleState, 
@@ -20,8 +19,9 @@ const backspace = ({
 
     const stateCopy = [...articleState.article];
 
-    // callapse paragraph with zws paragraph
-    if (nodeAddress[0] !== 0 && nodeAddress[1] === 0 && stateCopy[nodeAddress[0]-1].content[0].text === zws) {
+    // callapse paragraph with zws paragraph or img
+    if (nodeAddress[0] !== 0 && nodeAddress[1] === 0 && 
+      (stateCopy[nodeAddress[0]-1].type === 'img' || stateCopy[nodeAddress[0]-1].content[0].text === zws)) {
       const result = [];
       const newNodeAddress = [nodeAddress[0]-1, 0, 0];
 
