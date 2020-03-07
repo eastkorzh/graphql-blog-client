@@ -19,18 +19,18 @@ import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
 const Editor = () => {
-  //const [articleState, setArticleState] = useState(initialState1);
-  const [articleState, setArticleState] = useState({
-    h1: zws,
-    article: [{
-      id: shortid.generate(),
-      type: 'text',
-      content: [{
-        text: zws,
-        styles: null
-      }]
-    }]
-  });
+  const [articleState, setArticleState] = useState(initialState1);
+  // const [articleState, setArticleState] = useState({
+  //   h1: zws,
+  //   article: [{
+  //     id: shortid.generate(),
+  //     type: 'text',
+  //     content: [{
+  //       text: zws,
+  //       styles: null
+  //     }]
+  //   }]
+  // });
   const articleRef = createRef();
   const headerRef = createRef();
 
@@ -334,8 +334,8 @@ const Editor = () => {
                     <Close size={30} />
                   </div>
                   {(item.src.slice(0, 4) === 'blob') &&
-                    <div className={s.loading}>
-                      <Spinner color="#1E1E1E" />;
+                    <div contentEditable={false} className={s.loading}>
+                      <Spinner color="  #e2e2e2" size={40}/>
                     </div>
                   }
                   <img 

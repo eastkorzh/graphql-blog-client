@@ -71,7 +71,7 @@ const initialState = {
     {
       id: 'aklsd',
       type: 'img',
-      src: 'blob:http://localhost:3000/223bbf80-8f40-47cc-adbf-062c0896ac87',
+      src: 'https://res.cloudinary.com/eastkorzh/image/upload/v1583084511/sample.jpg',
     },
     { 
       id: 'kasfv',

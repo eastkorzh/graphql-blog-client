@@ -50,6 +50,9 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
       })
 
       setArticleState(stateCopy)
+    },
+    onError({ message }) {
+      console.log(message)
     }
   });
 
