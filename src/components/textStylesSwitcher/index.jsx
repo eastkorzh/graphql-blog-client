@@ -7,7 +7,7 @@ import updateNode from './updateNode';
 import concatSameStyles from './concatSameStyles';
 
 import s from './styles.module.scss';
-// ToDo: fix duble click returns undefinden from selectionChange
+
 const TextStylesSwitcher = ({ articleState, setArticleState }) => {
   const [selection, setSelection] = useState();
 
@@ -193,7 +193,9 @@ const TextStylesSwitcher = ({ articleState, setArticleState }) => {
     setSelection(selectionChange());
   }
 
-  document.onselectionchange = throttle(onSelectionChange, 300);
+  useEffect(() => {
+    document.addEventListener('selectionchange', throttle(onSelectionChange, 300))
+  }, [])
 
   return (
     <div className={s.container}>

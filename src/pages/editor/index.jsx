@@ -1,10 +1,11 @@
-import React, { useState, useEffect, createRef } from 'react';
+import React, { useState, useEffect, createRef, useCallback } from 'react';
 import cx from 'classnames';
 import shortid from 'shortid';
 
 import { br, zws } from './constants';
 import selectionChange from './utils/selectionChange';
 import initialState1 from './initialState1';
+import throttle from 'utils/throttle';
 
 import insertText from './insertText';
 import deleteSelected from './deleteSelected';
@@ -18,21 +19,23 @@ import AddPhoto from './addPhoto';
 import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
 
+const articleRef = createRef();
+const headerRef = createRef();
+
 const Editor = () => {
-  const [articleState, setArticleState] = useState(initialState1);
-  // const [articleState, setArticleState] = useState({
-  //   h1: zws,
-  //   article: [{
-  //     id: shortid.generate(),
-  //     type: 'text',
-  //     content: [{
-  //       text: zws,
-  //       styles: null
-  //     }]
-  //   }]
-  // });
-  const articleRef = createRef();
-  const headerRef = createRef();
+  const [ articleHistory, setArticleHistory ] = useState([]);
+  //const [ articleState, setArticleState ] = useState(initialState1);
+  const [articleState, setArticleState] = useState({
+    h1: zws,
+    article: [{
+      id: shortid.generate(),
+      type: 'text',
+      content: [{
+        text: zws,
+        styles: null
+      }]
+    }]
+  });
 
   useEffect(() => {
     if (articleState && articleState.caretPosition) {
@@ -71,6 +74,27 @@ const Editor = () => {
       }    
     }
   }, [articleState, articleRef])
+
+  const throttledSetArticleHistory = useCallback(throttle(
+    (state, history) => {
+      if (history.length >= 15) {
+        history.shift()
+      }
+
+      setArticleHistory([
+        ...history,
+        state,
+      ]);
+    },
+    500
+  ), [])
+
+  useEffect(() => {
+    if (articleState) {
+      const artycleStateCopy = JSON.parse(JSON.stringify(articleState));
+      throttledSetArticleHistory(artycleStateCopy, articleHistory)
+    }
+  }, [articleState])
 
   const onArticleChange = () => {
     const result = {
@@ -156,6 +180,18 @@ const Editor = () => {
 
   const onKeyDown = (e) => {
     const localName = e.target.localName;
+
+    // Ctrl+Z
+    if (e.keyCode === 90 && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      if (articleHistory.length > 1) {
+        setArticleState(articleHistory[articleHistory.length-2]);
+        const newArticleHistory = [...articleHistory];
+        newArticleHistory.pop();
+        newArticleHistory.pop();
+        setArticleHistory(newArticleHistory)
+      }
+    }
     
     if (localName === 'h1') {
       if (e.keyCode === 13) {
@@ -355,7 +391,7 @@ const Editor = () => {
       })
     }
   }
-  
+
   return (
     <div className={s.container}>
       <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/>

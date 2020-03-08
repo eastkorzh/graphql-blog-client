@@ -79,19 +79,20 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
       }
       return;
     };
-
+    console.log(anchorNode)
     const selection = selectionChange();
+
     if (selection && selection.nodeAddress) {
       const { nodeAddress: nA } = selection;
       
       if (articleState && articleState.article && articleRef.current) {
         const node = articleState.article[nA[0]];
-  
-        if (node.type === 'text' && node.content.length === 1 && node.content[0].text === zws) {
+        console.log(articleState)
+        if (node && node.type === 'text' && node.content.length === 1 && node.content[0].text === zws) {
           const caretNode = articleRef.current
             .childNodes[nA[0]]
             .childNodes[nA[1]]
-
+      
           setEmptyNodeTop(caretNode.getBoundingClientRect().top - articleRef.current.parentNode.getBoundingClientRect().top - 2);
           setNodeAddress(nA)
         } else {
@@ -164,7 +165,9 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
     onSelectionChange()
   }, [articleState])
 
-  document.onselectionchange = throttle(onSelectionChange, 300);
+  // useEffect(() => {
+  //   document.addEventListener('selectionchange', throttle(onSelectionChange, 300))
+  // }, [])
 
   return (
     <>
