@@ -41,7 +41,7 @@ const Editor = () => {
     if (articleState && articleState.caretPosition) {
       const { nodeAddress, offset, selectedRange } = articleState.caretPosition;
       let caretNode = null;
-
+      
       if (Array.isArray(offset)) {
         const range = new Range();
 

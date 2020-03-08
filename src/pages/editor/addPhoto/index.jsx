@@ -4,7 +4,6 @@ import { useMutation } from '@apollo/react-hooks';
 import { gql } from 'apollo-boost';
 
 import { zws, br } from '../constants';
-import selectionChange from '../utils/selectionChange';
 import throttle from 'utils/throttle';
 import { FileUploader } from 'baseui/file-uploader';
 import {
@@ -56,38 +55,15 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
     }
   });
 
-  const onSelectionChange = () => {
-    const anchorNode = document.getSelection().anchorNode;
-
-    if (!anchorNode || !anchorNode.parentNode.dataset.spanindex) {
-      if (emptyNodeTop) setEmptyNodeTop(null);
-      return;
-    }
-
-    if (!anchorNode || anchorNode.parentNode.parentNode.parentNode.childNodes.length !== 1) {
-      if (emptyNodeTop) {
-        setEmptyNodeTop(null);
-        setNodeAddress(null)
-      }
-      return;
-    }
-    
-    if (anchorNode.parentNode.parentNode.parentNode.childNodes[0].textContent.length > 1) {
-      if (emptyNodeTop) {
-        setEmptyNodeTop(null);
-        setNodeAddress(null)
-      }
-      return;
-    };
-    console.log(anchorNode)
-    const selection = selectionChange();
+  const onSelectionStateChange = () => {
+    const selection = articleState.caretPosition;
 
     if (selection && selection.nodeAddress) {
       const { nodeAddress: nA } = selection;
       
       if (articleState && articleState.article && articleRef.current) {
         const node = articleState.article[nA[0]];
-        console.log(articleState)
+
         if (node && node.type === 'text' && node.content.length === 1 && node.content[0].text === zws) {
           const caretNode = articleRef.current
             .childNodes[nA[0]]
@@ -101,6 +77,29 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
         }
       }
     }
+  }
+
+  const onSelectionChange = () => {
+    const anchorNode = document.getSelection().anchorNode;
+    
+    if (!anchorNode || !anchorNode.parentNode.dataset.spanindex) {
+      setEmptyNodeTop(null);
+      return;
+    }
+
+    if (!anchorNode || anchorNode.parentNode.parentNode.parentNode.childNodes.length !== 1) {
+      setEmptyNodeTop(null);
+      setNodeAddress(null);
+      return;
+    }
+    
+    if (anchorNode.parentNode.parentNode.parentNode.childNodes[0].textContent.length > 1) {
+      setEmptyNodeTop(null);
+      setNodeAddress(null);
+      return;
+    };
+
+    setEmptyNodeTop(anchorNode.parentNode.getBoundingClientRect().top - articleRef.current.parentNode.getBoundingClientRect().top - 2);
   }
 
   const uploadPhoto = async (photo) => {
@@ -162,12 +161,12 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
   }
 
   useEffect(() => {
-    onSelectionChange()
+    onSelectionStateChange()
   }, [articleState])
 
-  // useEffect(() => {
-  //   document.addEventListener('selectionchange', throttle(onSelectionChange, 300))
-  // }, [])
+  useEffect(() => {
+    document.addEventListener('selectionchange', throttle(onSelectionChange, 300))
+  }, [])
 
   return (
     <>
