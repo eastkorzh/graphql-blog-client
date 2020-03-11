@@ -8,8 +8,8 @@ const HeaderBar = () => {
   const Navs = () => (
     <nav className={s.navs}>
       <Link to='/'>Feed</Link>
-      <Link to='/'>My posts</Link>
-      <Link to='/editor'>Make Post</Link>
+      <Link to='/editor'>Editor</Link>
+      {/* <Link to='/editor'>Make Post</Link> */}
     </nav>
   )
 

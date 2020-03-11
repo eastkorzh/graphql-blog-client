@@ -1,11 +1,13 @@
 import React, { useState, useEffect, createRef, useCallback } from 'react';
 import cx from 'classnames';
 import shortid from 'shortid';
+import { useLazyQuery, useMutation } from '@apollo/react-hooks';
 
 import { br, zws } from './constants';
 import selectionChange from './utils/selectionChange';
 import initialState1 from './initialState1';
 import throttle from 'utils/throttle';
+import ObjectID from 'utils/ObjectID';
 
 import insertText from './insertText';
 import deleteSelected from './deleteSelected';
@@ -18,14 +20,58 @@ import Close from 'baseui/icon/delete';
 import AddPhoto from './addPhoto';
 import TextStylesSwitcher from 'components/textStylesSwitcher';
 import s from './styles.module.scss';
+import gql from 'graphql-tag';
 
 const articleRef = createRef();
 const headerRef = createRef();
 
-const Editor = () => {
-  const [ articleHistory, setArticleHistory ] = useState([]);
-  //const [ articleState, setArticleState ] = useState(initialState1);
-  const [articleState, setArticleState] = useState({
+const GET_DRAFT = gql`
+  query Draft($_id: ID!) {
+    draft(_id: $_id) {
+      _id
+      title
+      content
+    }
+  }
+`
+
+const UPDATE_DRAFT = gql`
+  mutation updateDraft(
+    $_id: ID!
+    $title: String
+    $content: String
+  ) {
+    updateDraft(
+      _id: $_id
+      title: $title
+      content: $content
+    ) {
+      _id
+      title
+      content
+    }
+  }
+`
+
+const Editor = ({ match }) => {
+  const [ getDraft, { data: draftContent, loading: draftLoading } ] = useLazyQuery(GET_DRAFT);
+  const [ updateDraft, { data: updatedDraft} ] = useMutation(UPDATE_DRAFT, {
+    update(cache, { data: update } ) {
+      if (draftContent) {
+        cache.writeQuery({
+          query: GET_DRAFT,
+          data: {
+            draft: {
+              ...update.updateDraft,
+            }
+          },
+          variables: { _id: match.params.id}
+        })
+      }
+    }
+  });
+
+  const initialState = {
     h1: zws,
     article: [{
       id: shortid.generate(),
@@ -35,8 +81,79 @@ const Editor = () => {
         styles: null
       }]
     }]
-  });
+  }
 
+  const [ articleHistory, setArticleHistory ] = useState([]);
+  const [ articleState, setArticleState ] = useState(null);
+  const [ ignoreCacheUpdate, setIgnoreCacheUpdate ] = useState(false);
+
+  useEffect(() => {
+    const _id = match.params.id;
+    
+    if (match.path === "/editor/draft/:id") {
+      getDraft({ variables: { _id }})
+    }
+  }, [])
+
+  useEffect(() => {
+    if (draftContent && !ignoreCacheUpdate) {
+      const content = JSON.parse(draftContent.draft.content);
+
+      if (typeof content === 'object' && content !== null) {
+        setArticleState(content)
+      } else {
+        setArticleState({
+          h1: zws,
+          article: [{
+            id: shortid.generate(),
+            type: 'text',
+            content: [{
+              text: zws,
+              styles: null
+            }]
+          }]
+        })
+      }
+
+      setIgnoreCacheUpdate(true)
+    }
+  }, [draftContent])
+
+  const throttledSetArticleHistory = useCallback(throttle(
+    (state, history) => {
+      if (history.length >= 15) {
+        history.shift()
+      }
+      
+      setArticleHistory([
+        ...history,
+        state,
+      ]);
+    },
+    500
+  ), [])
+
+  const throttledUpdateDraft = useCallback(throttle(
+    (_id, state, title) => {
+
+      updateDraft({ variables: {
+        _id,
+        title,
+        content: state,
+      }})
+    },
+    1000
+  ), [])
+
+  useEffect(() => {
+    if (articleState) {
+      const articleStateJSON = JSON.stringify(articleState);
+      const artycleStateCopy = JSON.parse(articleStateJSON);
+      throttledSetArticleHistory(artycleStateCopy, articleHistory);
+      throttledUpdateDraft(match.params.id, articleStateJSON, artycleStateCopy.h1);
+    }
+  }, [articleState])
+  
   useEffect(() => {
     if (articleState && articleState.caretPosition) {
       const { nodeAddress, offset, selectedRange } = articleState.caretPosition;
@@ -74,27 +191,6 @@ const Editor = () => {
       }    
     }
   }, [articleState, articleRef])
-
-  const throttledSetArticleHistory = useCallback(throttle(
-    (state, history) => {
-      if (history.length >= 15) {
-        history.shift()
-      }
-
-      setArticleHistory([
-        ...history,
-        state,
-      ]);
-    },
-    500
-  ), [])
-
-  useEffect(() => {
-    if (articleState) {
-      const artycleStateCopy = JSON.parse(JSON.stringify(articleState));
-      throttledSetArticleHistory(artycleStateCopy, articleHistory)
-    }
-  }, [articleState])
 
   const onArticleChange = () => {
     const result = {
@@ -394,103 +490,107 @@ const Editor = () => {
 
   return (
     <div className={s.container}>
-      <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/>
-      <div
-        className={s.editor}
-        onInput={onArticleChange}
-        onKeyDown={onKeyDown}
-        onDragStart={e => e.preventDefault()}
-      >
-        <AddPhoto articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
-        {articleState && 
-          <h1
-            className={cx({ [s.emptyH1]: (articleState.h1 === zws) })}
-            contentEditable={true} 
-            suppressContentEditableWarning={true}
-            ref={headerRef}
-            data-placeholder='Header'
+      {articleState &&
+        <>
+          {/* <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/> */}
+          <div
+            className={s.editor}
+            onInput={onArticleChange}
+            onKeyDown={onKeyDown}
+            onDragStart={e => e.preventDefault()}
           >
-            {articleState.h1}
-          </h1>
-        }
-        <article
-          contentEditable={true} 
-          suppressContentEditableWarning={true}
-          ref={articleRef}
-          onPaste={e => paste(e)}
-        >
-          {articleState && articleState.article.map((item, index) => {
-            if (item.type === 'img') {
-              return (
-                <div contentEditable={false} className={s.image} key={item.id} data-key={item.id} data-role={'img'}>
-                  <div className={s.delete} onClick={() => deleteImage(index)}>
-                    <Close size={30} />
-                  </div>
-                  {(item.src.slice(0, 4) === 'blob') &&
-                    <div contentEditable={false} className={s.loading}>
-                      <Spinner color="  #e2e2e2" size={40}/>
-                    </div>
-                  }
-                  <img 
-                    style={{ maxWidth: '100%'}} 
-                    src={item.src} 
-                    alt=""
-                  />
-                </div>
-              )
+            <AddPhoto articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
+            {(articleState && !draftLoading) && 
+              <h1
+                className={cx({ [s.emptyH1]: (articleState.h1 === zws) })}
+                contentEditable={true} 
+                suppressContentEditableWarning={true}
+                ref={headerRef}
+                data-placeholder='Header'
+              >
+                {articleState.h1}
+              </h1>
             }
-            if (item.type === 'text') {
-              return (
-                <p data-index={index} key={item.id} data-key={item.id}>
-                  {item.content.map((contentItem, contentIndex) => {
-                    if (contentItem === br) {
-                      return <br key={contentIndex}/>
-                    } else {
-                      const { text, styles } = contentItem;
-                      let result = [];
-                      if (styles) {
-                        for (let i=0; i<styles.length; i++) {
-                          result.push(
-                            <span 
-                              key={`${item.id}-${contentIndex}-${i}`} 
-                              data-key={`${item.id}-${contentIndex}-${i}`}
-                              data-spanindex={[index, contentIndex, i]} 
-                              style={styles[i].style}
-                            >
-                              {text.slice(...styles[i].range)}
-                            </span>);
-                        }
-                      } else {
-                        if (!index && !contentIndex && text === zws) {
-                          result = <span 
-                            className={s.emptySpan} 
-                            data-placeholder='Text' 
-                            data-spanindex={[index, contentIndex, 0]}
-                          >
-                            {text}
-                          </span>
-                        } else {
-                          result = <span data-spanindex={[index, contentIndex, 0]}>{text}</span>;
-                        }
+            <article
+              contentEditable={true} 
+              suppressContentEditableWarning={true}
+              ref={articleRef}
+              onPaste={e => paste(e)}
+            >
+              {(articleState && !draftLoading) && articleState.article.map((item, index) => {
+                if (item.type === 'img') {
+                  return (
+                    <div contentEditable={false} className={s.image} key={item.id} data-key={item.id} data-role={'img'}>
+                      <div className={s.delete} onClick={() => deleteImage(index)}>
+                        <Close size={30} />
+                      </div>
+                      {(item.src.slice(0, 4) === 'blob') &&
+                        <div contentEditable={false} className={s.loading}>
+                          <Spinner color="  #e2e2e2" size={40}/>
+                        </div>
                       }
-                      return (
-                        <span 
-                          data-index={index} 
-                          data-contentindex={contentIndex}
-                          key={`${item.id}-${contentIndex}`} 
-                          data-key={`${item.id}-${contentIndex}`}
-                        >
-                          {result}
-                        </span>
-                      )
-                    }
-                  })}
-                </p>
-              )
-            } else return null;
-          })}
-        </article>
-      </div>
+                      <img 
+                        style={{ maxWidth: '100%'}} 
+                        src={item.src} 
+                        alt=""
+                      />
+                    </div>
+                  )
+                }
+                if (item.type === 'text') {
+                  return (
+                    <p data-index={index} key={item.id} data-key={item.id}>
+                      {item.content.map((contentItem, contentIndex) => {
+                        if (contentItem === br) {
+                          return <br key={contentIndex}/>
+                        } else {
+                          const { text, styles } = contentItem;
+                          let result = [];
+                          if (styles) {
+                            for (let i=0; i<styles.length; i++) {
+                              result.push(
+                                <span 
+                                  key={`${item.id}-${contentIndex}-${i}`} 
+                                  data-key={`${item.id}-${contentIndex}-${i}`}
+                                  data-spanindex={[index, contentIndex, i]} 
+                                  style={styles[i].style}
+                                >
+                                  {text.slice(...styles[i].range)}
+                                </span>);
+                            }
+                          } else {
+                            if (!index && !contentIndex && text === zws) {
+                              result = <span 
+                                className={s.emptySpan} 
+                                data-placeholder='Text' 
+                                data-spanindex={[index, contentIndex, 0]}
+                              >
+                                {text}
+                              </span>
+                            } else {
+                              result = <span data-spanindex={[index, contentIndex, 0]}>{text}</span>;
+                            }
+                          }
+                          return (
+                            <span 
+                              data-index={index} 
+                              data-contentindex={contentIndex}
+                              key={`${item.id}-${contentIndex}`} 
+                              data-key={`${item.id}-${contentIndex}`}
+                            >
+                              {result}
+                            </span>
+                          )
+                        }
+                      })}
+                    </p>
+                  )
+                } else return null;
+              })}
+            </article>
+          </div>
+        </>
+      }
     </div>
   )
 }

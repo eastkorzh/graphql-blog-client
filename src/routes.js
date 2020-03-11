@@ -2,6 +2,7 @@ import Home from 'pages/home';
 import Auth from 'pages/auth';
 import File from 'pages/file';
 import Editor from 'pages/editor';
+import EditorMainMenu from 'pages/editorMainMenu';
 import AccountSettings from './pages/accountSettings';
 
 const routes = [
@@ -23,7 +24,12 @@ const routes = [
   {
     path: '/editor',
     exact: true,
-    component: Editor
+    component: EditorMainMenu
+  },
+  {
+    path: '/editor/draft/:id',
+    exact: true,
+    component: Editor,
   },
   {
     path: '/account',

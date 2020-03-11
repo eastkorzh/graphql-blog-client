@@ -30,7 +30,7 @@ const AboutUser = () => {
 
   return (
     <>
-      {loading ? <Spinner /> :
+      {loading ? <Spinner color="#e2e2e2" size={40}/> :
         ((data && data.me) ?
           <div 
             className={s.aboutUser}
