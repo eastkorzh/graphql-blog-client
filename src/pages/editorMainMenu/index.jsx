@@ -5,6 +5,7 @@ import cx from 'classnames';
 import moment from 'moment';
 import ObjectID from 'utils/ObjectID';
 
+import { toaster, ToasterContainer, PLACEMENT } from "baseui/toast";
 import { Spinner } from "baseui/spinner";
 import DeleteAlt from 'baseui/icon/delete-alt'
 import HeaderBar from 'components/headerBar';
@@ -66,11 +67,14 @@ const DELETE_DRAFT = gql`
 `
 
 const EditorMainMenu = ({ history }) => {
-  const { data, error, client } = useQuery(GET_USER_EDITOR);
+  const { data, client } = useQuery(GET_USER_EDITOR, {
+    onError({ message }) {
+      toaster.negative(message)
+    }
+  });
 
   const [ createDraft, { loading: creatingDraft }] = useMutation(CREATE_DRAFT, {
     update(cache, { data: { createDraft } }) {
-      console.log(createDraft)
       cache.writeData({ data: {
         me: {
           ...data.me,
@@ -81,10 +85,6 @@ const EditorMainMenu = ({ history }) => {
   })
 
   const [ deleteDraft ] = useMutation(DELETE_DRAFT)
-  
-  useEffect(() => {
-    //console.log(data);
-  })
 
   const createPost = async () => {
     try {
@@ -93,7 +93,7 @@ const EditorMainMenu = ({ history }) => {
 
       history.push(`/editor/draft/${_id}`)
     } catch (error) {
-      console.log(error.message)
+      toaster.negative(error.message)
     }
   }
 
@@ -121,16 +121,26 @@ const EditorMainMenu = ({ history }) => {
         });
       }
     } catch (error) {
-      console.log(error.message)
+      toaster.negative(error.message)
     }
   }
 
   const Post = ({ item, isDraft }) => {
     return (
-      <div className={s.card} onClick={() => history.push(`/editor/draft/${item._id}`)}>
+      <div className={s.card} onClick={(e) => {
+        if (!(e.target.dataset.role || e.target.localName === 'path')) {
+          history.push(`/editor/draft/${item._id}`);
+        }
+      }}>
         <div className={s.top}>
           <div className={s.date}>{moment(item.date, 'x').format("DD-MM-YYYY")}</div>
-          <div className={s.delete} onClick={() => deleteItem({ _id: item._id, isDraft })}><DeleteAlt /></div>
+          <div 
+            className={s.delete} 
+            onClick={() => deleteItem({ _id: item._id, isDraft })}
+            data-role={'delete'}
+          >
+            <DeleteAlt data-role={'delete'}/>
+          </div>
         </div>
         <h4>{item.title}</h4>
       </div>
@@ -138,28 +148,39 @@ const EditorMainMenu = ({ history }) => {
   }
 
   return (
-    <div>
-        <HeaderBar />
-        {data &&
-          <div className={s.content}>
-            <div className={s.postsWrapper}>
-              <h3>Drafts</h3>
-              <div className={s.posts}>
-                <div onClick={createPost} className={cx({ [s.card]: true, [s.newPost]: true })}>
-                  {creatingDraft ? <Spinner color="  #e2e2e2" size={80}/> : '+' }
-                </div>
-                {[...data.me.drafts].reverse().map((item) => <Post key={item._id} item={item} isDraft={true}/> )}
+    <ToasterContainer placement={PLACEMENT.bottomRight} >
+      <HeaderBar />
+      <div className={s.content}>
+        <div className={s.postsWrapper}>
+          <h3>Drafts</h3>
+          { data ?
+            <div className={s.posts}>
+              <div onClick={createPost} className={cx({ [s.card]: true, [s.newPost]: true })}>
+                {creatingDraft ? <Spinner color="#e2e2e2" size={80}/> : '+' }
               </div>
-            </div>
-            <div className={s.postsWrapper}>
-              <h3>Posts</h3>
-              <div className={s.posts}>
-                {[...data.me.posts].reverse().map((item) => <Post key={item._id} item={item} isDraft={false}/> )}
-              </div>
-            </div>
-          </div>
-        }
-    </div>
+              {data.me.drafts
+                .sort((a, b) => parseInt(b.date) - parseInt(a.date))
+                .map((item) => <Post key={item._id} item={item} isDraft={true}/> )}
+            </div> :
+            <Spinner color="#e2e2e2" size={60}/>
+          }
+        </div>
+        <div className={s.postsWrapper}>
+          <h3>Posts</h3>
+          { data ?
+            <div className={s.posts}>
+              { data.me.posts ?
+                data.me.posts
+                  .sort((a, b) => parseInt(b.date) - parseInt(a.date))
+                  .map((item) => <Post key={item._id} item={item} isDraft={false}/> ) :
+                <div>You have not posted yet.</div>
+              }
+            </div> :
+            <Spinner color="#e2e2e2" size={60}/>
+          }
+        </div>
+      </div>
+    </ToasterContainer>
   )
 }
 

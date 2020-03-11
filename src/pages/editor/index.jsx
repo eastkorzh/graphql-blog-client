@@ -7,7 +7,6 @@ import { br, zws } from './constants';
 import selectionChange from './utils/selectionChange';
 import initialState1 from './initialState1';
 import throttle from 'utils/throttle';
-import ObjectID from 'utils/ObjectID';
 
 import insertText from './insertText';
 import deleteSelected from './deleteSelected';
@@ -15,6 +14,7 @@ import shiftEnter from './shiftEnter';
 import enter from './enter';
 import backspace from './backspace';
 
+import { toaster, ToasterContainer, PLACEMENT } from "baseui/toast";
 import { Spinner } from "baseui/spinner";
 import Close from 'baseui/icon/delete';
 import AddPhoto from './addPhoto';
@@ -31,6 +31,7 @@ const GET_DRAFT = gql`
       _id
       title
       content
+      date
     }
   }
 `
@@ -49,13 +50,18 @@ const UPDATE_DRAFT = gql`
       _id
       title
       content
+      date
     }
   }
 `
 
 const Editor = ({ match }) => {
-  const [ getDraft, { data: draftContent, loading: draftLoading } ] = useLazyQuery(GET_DRAFT);
-  const [ updateDraft, { data: updatedDraft} ] = useMutation(UPDATE_DRAFT, {
+  const [ getDraft, { data: draftContent, loading: draftLoading } ] = useLazyQuery(GET_DRAFT, {
+    onError({ message }) {
+      toaster.negative(message)
+    }
+  });
+  const [ updateDraft ] = useMutation(UPDATE_DRAFT, {
     update(cache, { data: update } ) {
       if (draftContent) {
         cache.writeQuery({
@@ -68,6 +74,9 @@ const Editor = ({ match }) => {
           variables: { _id: match.params.id}
         })
       }
+    },
+    onError({ message }) {
+      toaster.negative(message)
     }
   });
 
@@ -102,17 +111,7 @@ const Editor = ({ match }) => {
       if (typeof content === 'object' && content !== null) {
         setArticleState(content)
       } else {
-        setArticleState({
-          h1: zws,
-          article: [{
-            id: shortid.generate(),
-            type: 'text',
-            content: [{
-              text: zws,
-              styles: null
-            }]
-          }]
-        })
+        setArticleState(initialState)
       }
 
       setIgnoreCacheUpdate(true)
@@ -148,9 +147,10 @@ const Editor = ({ match }) => {
   useEffect(() => {
     if (articleState) {
       const articleStateJSON = JSON.stringify(articleState);
-      const artycleStateCopy = JSON.parse(articleStateJSON);
-      throttledSetArticleHistory(artycleStateCopy, articleHistory);
-      throttledUpdateDraft(match.params.id, articleStateJSON, artycleStateCopy.h1);
+      const articleStateCopy = JSON.parse(articleStateJSON);
+
+      throttledSetArticleHistory(articleStateCopy, articleHistory);
+      throttledUpdateDraft(match.params.id, articleStateJSON, articleStateCopy.h1);
     }
   }, [articleState])
   
@@ -489,7 +489,8 @@ const Editor = ({ match }) => {
   }
 
   return (
-    <div className={s.container}>
+    <ToasterContainer placement={PLACEMENT.bottomRight} >
+      <div className={s.container}>
       {articleState &&
         <>
           {/* <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/> */}
@@ -526,7 +527,7 @@ const Editor = ({ match }) => {
                       </div>
                       {(item.src.slice(0, 4) === 'blob') &&
                         <div contentEditable={false} className={s.loading}>
-                          <Spinner color="  #e2e2e2" size={40}/>
+                          <Spinner color="#e2e2e2" size={40}/>
                         </div>
                       }
                       <img 
@@ -591,7 +592,8 @@ const Editor = ({ match }) => {
           </div>
         </>
       }
-    </div>
+      </div>
+    </ToasterContainer>
   )
 }
 
