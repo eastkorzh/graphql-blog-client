@@ -132,7 +132,11 @@ const EditorMainMenu = ({ history }) => {
         className={s.card} 
         onClick={(e) => {
           if (!(e.target.dataset.role || e.target.localName === 'path')) {
-            history.push(`/editor/draft/${item._id}`);
+            if (isDraft) {
+              history.push(`/editor/draft/${item._id}`);
+            } else {
+              history.push(`/editor/post/${item._id}`);
+            }
           }
         }}
         style={{

@@ -14,6 +14,7 @@ import shiftEnter from './shiftEnter';
 import enter from './enter';
 import backspace from './backspace';
 
+import EditorHeader from './editorHeader';
 import { toaster, ToasterContainer, PLACEMENT } from "baseui/toast";
 import { Spinner } from "baseui/spinner";
 import Close from 'baseui/icon/delete';
@@ -33,6 +34,14 @@ const GET_DRAFT = gql`
       content
       date
       cover
+    }
+  }
+`
+const GET_POST = gql`
+  query Post($_id: ID!) {
+    post(_id: $_id) {
+      _id
+      content
     }
   }
 `
@@ -59,8 +68,13 @@ const UPDATE_DRAFT = gql`
   }
 `
 
-const Editor = ({ match }) => {
+const Editor = ({ match, history }) => {
   const [ getDraft, { data: draftContent, loading: draftLoading } ] = useLazyQuery(GET_DRAFT, {
+    onError({ message }) {
+      toaster.negative(message)
+    }
+  });
+  const [ getPost, { data: postContent, loading: postLoading } ] = useLazyQuery(GET_POST, {
     onError({ message }) {
       toaster.negative(message)
     }
@@ -100,6 +114,7 @@ const Editor = ({ match }) => {
   const [ articleState, setArticleState ] = useState(null);
   const [ ignoreCacheUpdate, setIgnoreCacheUpdate ] = useState(true);
   const [ ignoreDraftUpdate, setIgnoreDraftUpdate ] = useState(true);
+  const [ editingMode ] = useState(match.path === "/editor/draft/:id");
 
   useEffect(() => {
     const _id = match.params.id;
@@ -107,7 +122,21 @@ const Editor = ({ match }) => {
     if (match.path === "/editor/draft/:id") {
       getDraft({ variables: { _id }})
     }
+    if (match.path === "/editor/post/:id") {
+      getPost({ variables: { _id }});
+    }
   }, [])
+
+  useEffect(() => {
+    if (postContent) {
+      const content = JSON.parse(postContent.post.content);
+
+      if (typeof content === 'object' && content !== null) {
+        setArticleState(content)
+      }
+    }
+    
+  }, [postContent])
 
   useEffect(() => {
     if (draftContent && ignoreCacheUpdate) {
@@ -206,7 +235,8 @@ const Editor = ({ match }) => {
   }, [articleState, articleRef])
 
   const onArticleChange = () => {
-    if (ignoreDraftUpdate) setIgnoreDraftUpdate(false)
+    if (ignoreDraftUpdate) setIgnoreDraftUpdate(false);
+
     const result = {
       ...articleState,
       article: []
@@ -505,6 +535,7 @@ const Editor = ({ match }) => {
   return (
     <ToasterContainer placement={PLACEMENT.bottomRight} >
       <div className={s.container}>
+      <EditorHeader match={match} history={history}/>
       {articleState &&
         <>
           {/* <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/> */}
@@ -514,11 +545,13 @@ const Editor = ({ match }) => {
             onKeyDown={onKeyDown}
             onDragStart={e => e.preventDefault()}
           >
-            <AddPhoto articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
+            {editingMode &&
+              <AddPhoto articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
+            }
             {(articleState && !draftLoading) && 
               <h1
                 className={cx({ [s.emptyH1]: (articleState.h1 === zws) })}
-                contentEditable={true} 
+                contentEditable={editingMode} 
                 suppressContentEditableWarning={true}
                 ref={headerRef}
                 data-placeholder='Header'
@@ -527,7 +560,7 @@ const Editor = ({ match }) => {
               </h1>
             }
             <article
-              contentEditable={true} 
+              contentEditable={editingMode} 
               suppressContentEditableWarning={true}
               ref={articleRef}
               onPaste={e => paste(e)}
@@ -536,9 +569,11 @@ const Editor = ({ match }) => {
                 if (item.type === 'img') {
                   return (
                     <div contentEditable={false} className={s.image} key={item.id} data-key={item.id} data-role={'img'}>
-                      <div className={s.delete} onClick={() => deleteImage(index)}>
-                        <Close size={30} />
-                      </div>
+                      {editingMode &&
+                        <div className={s.delete} onClick={() => deleteImage(index)}>
+                          <Close size={30} />
+                        </div>
+                      }
                       {(item.src.slice(0, 4) === 'blob') &&
                         <div contentEditable={false} className={s.loading}>
                           <Spinner color="#e2e2e2" size={40}/>
