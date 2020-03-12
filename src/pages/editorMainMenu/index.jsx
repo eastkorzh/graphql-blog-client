@@ -19,13 +19,14 @@ const GET_USER_EDITOR = gql`
         title
         content
         date
-        content
+        cover
       }
       drafts {
         _id
         title
         date
         content
+        cover
       }
     }
   }
@@ -127,11 +128,19 @@ const EditorMainMenu = ({ history }) => {
 
   const Post = ({ item, isDraft }) => {
     return (
-      <div className={s.card} onClick={(e) => {
-        if (!(e.target.dataset.role || e.target.localName === 'path')) {
-          history.push(`/editor/draft/${item._id}`);
-        }
-      }}>
+      <div 
+        className={s.card} 
+        onClick={(e) => {
+          if (!(e.target.dataset.role || e.target.localName === 'path')) {
+            history.push(`/editor/draft/${item._id}`);
+          }
+        }}
+        style={{
+          background: `linear-gradient(0deg, rgba(41,41,41,0.9) 0%, rgba(41,41,41,0) 51%), 
+          ${item.cover ? `url(${item.cover}) center no-repeat` : 'rgb(41, 41, 41)'}`,
+          backgroundSize: 'cover',
+        }}
+      >
         <div className={s.top}>
           <div className={s.date}>{moment(item.date, 'x').format("DD-MM-YYYY")}</div>
           <div 

@@ -32,6 +32,7 @@ const GET_DRAFT = gql`
       title
       content
       date
+      cover
     }
   }
 `
@@ -41,16 +42,19 @@ const UPDATE_DRAFT = gql`
     $_id: ID!
     $title: String
     $content: String
+    $cover: String
   ) {
     updateDraft(
       _id: $_id
       title: $title
       content: $content
+      cover: $cover
     ) {
       _id
       title
       content
       date
+      cover
     }
   }
 `
@@ -94,7 +98,8 @@ const Editor = ({ match }) => {
 
   const [ articleHistory, setArticleHistory ] = useState([]);
   const [ articleState, setArticleState ] = useState(null);
-  const [ ignoreCacheUpdate, setIgnoreCacheUpdate ] = useState(false);
+  const [ ignoreCacheUpdate, setIgnoreCacheUpdate ] = useState(true);
+  const [ ignoreDraftUpdate, setIgnoreDraftUpdate ] = useState(true);
 
   useEffect(() => {
     const _id = match.params.id;
@@ -105,7 +110,7 @@ const Editor = ({ match }) => {
   }, [])
 
   useEffect(() => {
-    if (draftContent && !ignoreCacheUpdate) {
+    if (draftContent && ignoreCacheUpdate) {
       const content = JSON.parse(draftContent.draft.content);
 
       if (typeof content === 'object' && content !== null) {
@@ -114,9 +119,9 @@ const Editor = ({ match }) => {
         setArticleState(initialState)
       }
 
-      setIgnoreCacheUpdate(true)
+      setIgnoreCacheUpdate(false)
     }
-  }, [draftContent])
+  }, [draftContent, ignoreCacheUpdate])
 
   const throttledSetArticleHistory = useCallback(throttle(
     (state, history) => {
@@ -133,26 +138,34 @@ const Editor = ({ match }) => {
   ), [])
 
   const throttledUpdateDraft = useCallback(throttle(
-    (_id, state, title) => {
-
+    (_id, articleStateJSON, articleStateCopy) => {
+      let cover = null;
+      for (let item of articleStateCopy.article) {
+        if (item.type === 'img' && item.src.slice(0, 4) === 'http') {
+          cover = item.src;
+          break;
+        }
+      }
+      
       updateDraft({ variables: {
         _id,
-        title,
-        content: state,
+        title: articleStateCopy.h1,
+        content: articleStateJSON,
+        cover,
       }})
     },
     1000
   ), [])
 
   useEffect(() => {
-    if (articleState) {
+    if (articleState && !ignoreDraftUpdate) {
       const articleStateJSON = JSON.stringify(articleState);
       const articleStateCopy = JSON.parse(articleStateJSON);
 
       throttledSetArticleHistory(articleStateCopy, articleHistory);
-      throttledUpdateDraft(match.params.id, articleStateJSON, articleStateCopy.h1);
+      throttledUpdateDraft(match.params.id, articleStateJSON, articleStateCopy);
     }
-  }, [articleState])
+  }, [articleState, ignoreDraftUpdate])
   
   useEffect(() => {
     if (articleState && articleState.caretPosition) {
@@ -193,6 +206,7 @@ const Editor = ({ match }) => {
   }, [articleState, articleRef])
 
   const onArticleChange = () => {
+    if (ignoreDraftUpdate) setIgnoreDraftUpdate(false)
     const result = {
       ...articleState,
       article: []
