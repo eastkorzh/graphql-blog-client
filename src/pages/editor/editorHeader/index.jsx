@@ -16,27 +16,27 @@ const PUBLISH_DRAFT = gql`
       _id: $_id
     ) {
       _id
-      name
-      email
       drafts {
         _id
         title
         content
+        cover
       }
       posts {
         _id
         title
         content
+        cover
       }
     }
   }
 `
-
-const GET_AUTHOR = gql`
-  query Author($_id: ID!) {
+const GET_DRAFT_AUTHOR = gql`
+  query draftAuthor($_id: ID!) {
     draft(_id: $_id) {
       _id
       author {
+        _id
         email
         name
         avatar
@@ -44,43 +44,98 @@ const GET_AUTHOR = gql`
     }
   }
 `
-
+const GET_POST_AUTHOR = gql`
+  query postAuthor($_id: ID!) {
+    post(_id: $_id) {
+      _id
+      author {
+        _id
+        name
+        email
+        avatar
+      }
+    }
+  }
+`
 const GET_LOGGED_USER = gql`
   query getLoggedUser {
     me {
-      email
+      _id
     }
   }
 `
 
 const EditorHeader = ({ match, history }) => {
   const [ isAuthor, setIsAuthor ] = useState(false);
+  const [ author, setAuthor ] = useState(null);
 
-  const [ publishDraft ] = useMutation(PUBLISH_DRAFT);
-  const [ getUser, { data: loggedUser } ] = useLazyQuery(GET_LOGGED_USER);
-  const { data: author } = useQuery(GET_AUTHOR, {
-    variables: {
-      _id: match.params.id
-    }, 
-    onCompleted() {
-      getUser()
+  const [ publishDraft ] = useMutation(PUBLISH_DRAFT)
+  //   , {
+  //   update(cache, { data: publishDraft }) {
+  //     console.log(publishDraft)
+  //     cache.writeData({ data: {
+  //       me: {
+  //         ...publishDraft,
+  //       }
+  //     }})
+  //   }
+  // });
+
+  const [ getDraftAuthor ] = useLazyQuery(GET_DRAFT_AUTHOR, {
+    onCompleted({ draft }) {
+      if (draft) {
+        setAuthor(draft.author)
+        setIsAuthor(draft.author._id === loggedUser.me._id)
+      }
     }
   });
-  
-  useEffect(() => {
-    if (loggedUser && author) {
-      setIsAuthor(loggedUser.me.email === author.draft.author.email)
+  const [ getPostAuthor ] = useLazyQuery(GET_POST_AUTHOR, {
+    onCompleted({ post }) {
+      if (post) {
+        setAuthor(post.author)
+        setIsAuthor(post.author._id === loggedUser.me._id)
+      }
     }
-  }, [loggedUser])
+  });
+  const { data: loggedUser } = useQuery(GET_LOGGED_USER, {
+    onCompleted() {
+      if (match.path === '/editor/post/:id') {
+        getPostAuthor({ variables: {
+          _id: match.params.id,
+        }})
+      }
+      if (match.path === '/editor/draft/:id') {
+        getDraftAuthor({ variables: {
+          _id: match.params.id,
+        }})
+      }
+    }
+  });
 
-  useEffect(() => {
-    console.log(author)
-  })
+  // const [ getUser ] = useLazyQuery(GET_LOGGED_USER, {
+  //   onCompleted({ me }) {
+  //     if (me) {
+  //       setIsAuthor(me.email === author.draft.author.email)
+  //     }
+  //   }
+  // });
+  // const { data: author } = useQuery(GET_DRAFT_AUTHOR, {
+  //   variables: {
+  //     _id: match.params.id
+  //   }, 
+  //   onCompleted() {
+  //     getUser()
+  //   }
+  // });
+
+  // useEffect(() => {
+  //   console.log(author)
+  // })
 
   const handlePublish = async () => {
     try {
-      await publishDraft({ variables: { _id: author.draft._id } });
-      history.push(`/editor/post/${author.draft._id}`)
+      await publishDraft({ variables: { _id: match.params.id } });
+      history.push(`/editor/post/${match.params.id}`)
     } catch (error) {
       toaster.negative(error.message)
     }
@@ -95,8 +150,8 @@ const EditorHeader = ({ match, history }) => {
           </div>
           {author &&
             <div className={s.author}>
-              <Avatar size={'50px'} name={author.draft.author.name} src={author.draft.author.avatar} />
-              <div className={s.name}>{author.draft.author.name}</div>
+              <Avatar size={'50px'} name={author.name} src={author.avatar} />
+              <div className={s.name}>{author.name}</div>
             </div>
           }
         </div>
@@ -107,7 +162,10 @@ const EditorHeader = ({ match, history }) => {
               BaseButton: {
                 style: {
                   height: '30px',
-                  padding: '5px 10px',
+                  paddingTop: '5px',
+                  paddingRight: '10px',
+                  paddingBottom: '5px',
+                  paddingLeft: '10px',
                 }
               }
             }}
@@ -120,7 +178,10 @@ const EditorHeader = ({ match, history }) => {
               BaseButton: {
                 style: {
                   height: '30px',
-                  padding: '5px 10px',
+                  paddingTop: '5px',
+                  paddingRight: '10px',
+                  paddingBottom: '5px',
+                  paddingLeft: '10px',
                 }
               }
             }}

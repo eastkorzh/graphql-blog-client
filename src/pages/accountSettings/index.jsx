@@ -15,6 +15,7 @@ import s from './styles.module.scss';
 const LOGGED_USER = gql`
   query getLoggedUser {
     me {
+      _id
       name
       email
     }

@@ -14,6 +14,7 @@ import s from './styles.module.scss';
 const GET_USER_EDITOR = gql`
   query getUserEditor {
     me {
+      _id
       posts {
         _id
         title

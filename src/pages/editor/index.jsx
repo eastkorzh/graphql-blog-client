@@ -80,19 +80,6 @@ const Editor = ({ match, history }) => {
     }
   });
   const [ updateDraft ] = useMutation(UPDATE_DRAFT, {
-    update(cache, { data: update } ) {
-      if (draftContent) {
-        cache.writeQuery({
-          query: GET_DRAFT,
-          data: {
-            draft: {
-              ...update.updateDraft,
-            }
-          },
-          variables: { _id: match.params.id}
-        })
-      }
-    },
     onError({ message }) {
       toaster.negative(message)
     }
