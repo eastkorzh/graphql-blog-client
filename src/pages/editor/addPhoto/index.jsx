@@ -165,7 +165,11 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
   }, [articleState])
 
   useEffect(() => {
-    document.addEventListener('selectionchange', throttle(onSelectionChange, 300))
+    const throttledSelectionChange = throttle(onSelectionChange, 300);
+    document.addEventListener('selectionchange', throttledSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', throttledSelectionChange);
+    }
   }, [])
 
   return (

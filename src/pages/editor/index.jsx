@@ -19,7 +19,7 @@ import { toaster, ToasterContainer, PLACEMENT } from "baseui/toast";
 import { Spinner } from "baseui/spinner";
 import Close from 'baseui/icon/delete';
 import AddPhoto from './addPhoto';
-import TextStylesSwitcher from 'components/textStylesSwitcher';
+import TextStylesSwitcher from './textStylesSwitcher';
 import s from './styles.module.scss';
 import gql from 'graphql-tag';
 
@@ -307,6 +307,8 @@ const Editor = ({ match, history }) => {
   }
 
   const onKeyDown = (e) => {
+    if (ignoreDraftUpdate) setIgnoreDraftUpdate(false);
+    
     const localName = e.target.localName;
 
     // Ctrl+Z
@@ -526,7 +528,7 @@ const Editor = ({ match, history }) => {
       <EditorHeader match={match} history={history}/>
       {articleState &&
         <>
-          <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/>
+          <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState} />
           <div
             className={s.editor}
             onInput={onArticleChange}
