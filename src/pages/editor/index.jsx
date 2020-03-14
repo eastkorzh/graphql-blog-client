@@ -269,7 +269,7 @@ const Editor = ({ match, history }) => {
 
           // iterate text blocks spans
           for (let styledNode of childNode.childNodes) {
-            const { fontWeight, fontStyle } = styledNode.style;
+            const { fontWeight, fontStyle, textDecoration } = styledNode.style;
             
             if (!styledNode.style.length && childNode.childNodes.length === 1) {
               styles = null;
@@ -278,6 +278,7 @@ const Editor = ({ match, history }) => {
                 style: {
                   fontWeight,
                   fontStyle,
+                  textDecoration,
                 },
                 range: [offset, offset+styledNode.textContent.length]
               })

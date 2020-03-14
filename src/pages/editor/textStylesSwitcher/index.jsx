@@ -189,14 +189,6 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
     })
   }
 
-  const bold = () => {
-    ejectStyles(articleState, selection, { fontWeight: 'bold' })
-  }
-
-  const italic = () => {
-    ejectStyles(articleState, selection, { fontStyle: 'italic' })
-  }
-
   const onSelectionChange = (articleState) => {
     const selectionChangeResult = selectionChange();
     const continuousStyles = getContinuousStyles(selectionChangeResult, articleState);
@@ -211,10 +203,11 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
   }
 
   useEffect(() => {
-    const throttledSelectionChange = throttle(() => onSelectionChange(articleState), 300);
-    document.addEventListener('selectionchange', throttledSelectionChange);
+    const throttledSelectionChange = throttle((articleState) => onSelectionChange(articleState), 300);
+
+    document.addEventListener('selectionchange', () => throttledSelectionChange(articleState));
     return () => {
-      document.removeEventListener('selectionchange', throttledSelectionChange);
+      document.removeEventListener('selectionchange', () => throttledSelectionChange(articleState));
     }
   }, [articleState])
 
@@ -251,6 +244,22 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
     } else return ejectingStyles;
   }
 
+  const bold = () => {
+    ejectStyles(articleState, selection, { fontWeight: 'bold' })
+  }
+
+  const italic = () => {
+    ejectStyles(articleState, selection, { fontStyle: 'italic' })
+  }
+
+  const underline = () => {
+    ejectStyles(articleState, selection, { textDecoration: 'underline'})
+  }
+  
+  const lineThrough = () => {
+    ejectStyles(articleState, selection, { textDecoration: 'line-through'})
+  }
+
   return (
     <>
       {coords &&
@@ -260,6 +269,12 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
           </button>
           <button onClick={italic} style={showActive(selection, { fontStyle: 'italic' })} >
             i
+          </button>
+          <button onClick={underline} style={showActive(selection, { textDecoration: 'underline' })} >
+            U
+          </button>
+          <button onClick={lineThrough} style={showActive(selection, { textDecoration: 'line-through' })} >
+            S
           </button>
         </div>
       }

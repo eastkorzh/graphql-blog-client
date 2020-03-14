@@ -6,6 +6,8 @@ const getContinuousStyles = (selectionChange, articleState) => {
 
     const filterStyles = ({ p, i, j, lineIndex, spanIndex, lineStyles }) => {
       // make first selected styles unique to compare next styles with this one
+      if (!lineStyles) return;
+      
       if (j === spanIndex && i === lineIndex && !(p > firstSelected[0] && p === lastSelected[0])) {
         let hasStyles = false;
 
@@ -134,7 +136,7 @@ const getContinuousStyles = (selectionChange, articleState) => {
         })
       }
     }
-    
+
     return uniqueStyles;
   }
 }
