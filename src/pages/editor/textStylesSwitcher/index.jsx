@@ -4,6 +4,7 @@ import { br } from 'pages/editor/constants';
 import throttle from 'utils/throttle';
 import selectionChange from 'pages/editor/utils/selectionChange';
 import updateNode from './updateNode';
+import getContinuousStyles from './getContinuousStyles';
 import concatSameStyles from './concatSameStyles';
 
 import s from './styles.module.scss';
@@ -189,17 +190,19 @@ const TextStylesSwitcher = ({ articleState, setArticleState }) => {
     ejectStyles(articleState, selection, { fontStyle: 'italic' })
   }
 
-  const onSelectionChange = () => {
-    setSelection(selectionChange());
+  const onSelectionChange = (articleState) => {
+    const selectionChangeResult = selectionChange();
+    console.log(getContinuousStyles(selectionChangeResult, articleState));
+    setSelection(selectionChangeResult);
   }
 
   useEffect(() => {
-    const throttledSelectionChange = throttle(onSelectionChange, 300);
+    const throttledSelectionChange = throttle(() => onSelectionChange(articleState), 300);
     document.addEventListener('selectionchange', throttledSelectionChange);
     return () => {
       document.removeEventListener('selectionchange', throttledSelectionChange);
     }
-  }, [])
+  }, [articleState])
 
   return (
     <div className={s.container}>
