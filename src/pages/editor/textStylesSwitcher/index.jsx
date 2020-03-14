@@ -9,8 +9,9 @@ import concatSameStyles from './concatSameStyles';
 
 import s from './styles.module.scss';
 
-const TextStylesSwitcher = ({ articleState, setArticleState }) => {
-  const [selection, setSelection] = useState();
+const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
+  const [ selection, setSelection ] = useState();
+  const [ coords, setCoords ] = useState(null);
 
   const ejectStyles = (articleState, selection, ejectingStyles) => {
     if (!selection) return;
@@ -18,6 +19,12 @@ const TextStylesSwitcher = ({ articleState, setArticleState }) => {
     if (selectedRange[0].length < 4) return;
     
     const stateCopy = {...articleState};
+
+    // if styles is already applied, remove it
+    const ejectingStylesKey = Object.keys(ejectingStyles)[0];
+    if (selection.continuousStyles[ejectingStylesKey] === ejectingStyles[ejectingStylesKey]) {
+      ejectingStyles[ejectingStylesKey] = '';
+    }
 
     for (let i=selectedRange[0][0]; i<=selectedRange[1][0]; i++) {
       if (stateCopy.article[i].type !== 'text') continue;
@@ -192,8 +199,15 @@ const TextStylesSwitcher = ({ articleState, setArticleState }) => {
 
   const onSelectionChange = (articleState) => {
     const selectionChangeResult = selectionChange();
-    console.log(getContinuousStyles(selectionChangeResult, articleState));
-    setSelection(selectionChangeResult);
+    const continuousStyles = getContinuousStyles(selectionChangeResult, articleState);
+
+    if (selectionChangeResult) {
+      const result = {
+        ...selectionChangeResult,
+        continuousStyles,
+      }
+      setSelection(result);
+    }
   }
 
   useEffect(() => {
@@ -204,15 +218,52 @@ const TextStylesSwitcher = ({ articleState, setArticleState }) => {
     }
   }, [articleState])
 
+  useEffect(() => {
+    if (selection && selection.selectedRange[0].length > 3) {
+      const { selectedRange } = selection;
+
+      const caretNodeStart = articleRef.current
+        .childNodes[selectedRange[0][0]]
+        .childNodes[selectedRange[0][1]]
+        .childNodes[selectedRange[0][2]]
+      
+      const left = selectedRange[0][3]/74;
+      const top = caretNodeStart.getBoundingClientRect().top - articleRef.current.parentNode.getBoundingClientRect().top - 60;
+      
+      setCoords({
+        top,
+        left: (left - Math.floor(left))*100+'%',
+      });
+    } else {
+      if (coords) setCoords(null)
+    }
+  }, [selection])
+
+  const showActive = (selection, ejectingStyles) => {
+    if (!selection.continuousStyles) return ejectingStyles;
+
+    const ejectingStylesKey = Object.keys(ejectingStyles)[0];
+    if (selection.continuousStyles[ejectingStylesKey] === ejectingStyles[ejectingStylesKey]) {
+      return {
+        ...ejectingStyles,
+        background: 'rgb(194, 194, 194)',
+      };
+    } else return ejectingStyles;
+  }
+
   return (
-    <div className={s.container}>
-      <button onClick={bold}>
-        B
-      </button>
-      <button onClick={italic}>
-        i
-      </button>
-    </div>
+    <>
+      {coords &&
+        <div className={s.container} style={{ top: coords.top, left: coords.left }}>
+          <button onClick={bold} style={showActive(selection, { fontWeight: 'bold' })} >
+            B
+          </button>
+          <button onClick={italic} style={showActive(selection, { fontStyle: 'italic' })} >
+            i
+          </button>
+        </div>
+      }
+    </>
   )
 }
 

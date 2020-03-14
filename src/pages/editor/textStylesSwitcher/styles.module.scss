@@ -1,3 +1,33 @@
+@import 'styles/constants.scss';
+
 .container {
   display: flex;
+  position: absolute;
+  z-index: 100;
+  padding: 5px;
+  border-radius: 8px;
+  background: $white;
+  box-shadow: 0 0 10px rgba(255, 255, 255, .3);
+  border: 1px solid rgb(207, 207, 207);
+  button {
+    height: 40px;
+    width: 40px;
+    border-radius: 5px;
+    background: $white;
+    border: 1px solid rgb(207, 207, 207);
+    margin-right: 5px;
+    color: rgb(41, 41, 41);
+    font-weight: bold;
+    font-size: 20px;
+    outline: none;
+    &:active {
+      background: rgb(194, 194, 194);
+    }
+    &:hover {
+      background: rgb(207, 207, 207);
+    }
+    &:last-child {
+      margin-right: 0;
+    }
+  }
 }

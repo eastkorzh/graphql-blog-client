@@ -308,7 +308,7 @@ const Editor = ({ match, history }) => {
 
   const onKeyDown = (e) => {
     if (ignoreDraftUpdate) setIgnoreDraftUpdate(false);
-    
+
     const localName = e.target.localName;
 
     // Ctrl+Z
@@ -528,7 +528,6 @@ const Editor = ({ match, history }) => {
       <EditorHeader match={match} history={history}/>
       {articleState &&
         <>
-          <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState} />
           <div
             className={s.editor}
             onInput={onArticleChange}
@@ -536,7 +535,10 @@ const Editor = ({ match, history }) => {
             onDragStart={e => e.preventDefault()}
           >
             {editingMode &&
-              <AddPhoto articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
+              <>
+                <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
+                <AddPhoto articleState={articleState} setArticleState={setArticleState} articleRef={articleRef} />
+              </>
             }
             {(articleState && !draftLoading) && 
               <h1
