@@ -34,6 +34,7 @@ const GET_DRAFT = gql`
       content
       date
       cover
+      originalPost
     }
   }
 `
@@ -525,7 +526,7 @@ const Editor = ({ match, history }) => {
       <EditorHeader match={match} history={history}/>
       {articleState &&
         <>
-          {/* <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/> */}
+          <TextStylesSwitcher articleState={articleState} setArticleState={setArticleState}/>
           <div
             className={s.editor}
             onInput={onArticleChange}

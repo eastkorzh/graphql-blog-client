@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useLazyQuery } from '@apollo/react-hooks';
+import ObjectID from 'utils/ObjectID';
 
 import { Avatar } from "baseui/avatar";
 import ArrowLeft from 'baseui/icon/arrow-left'
@@ -21,12 +22,69 @@ const PUBLISH_DRAFT = gql`
         title
         content
         cover
+        originalPost
+        date
       }
       posts {
         _id
         title
         content
         cover
+        date
+      }
+    }
+  }
+`
+const EDIT_POST = gql`
+  mutation editPost(
+    $postId: ID!
+    $draftId: ID!
+  ) {
+    editPost(
+      postId: $postId
+      draftId: $draftId
+    ) {
+      _id
+      drafts {
+        _id
+        title
+        content
+        cover
+        date
+        originalPost
+      }
+    }
+  }
+`
+const UPDATE_POST = gql`
+  mutation updatePost(
+    $originalPost: ID!
+    $draftId: ID!
+    $title: String
+    $content: String
+    $cover: String
+  ) {
+    updatePost(
+      originalPost: $originalPost
+      draftId: $draftId
+      title: $title
+      content: $content
+      cover: $cover
+    ) {
+      _id
+      drafts {
+        _id
+        title
+        content
+        cover
+        date
+      }
+      posts {
+        _id
+        title
+        content
+        cover
+        date
       }
     }
   }
@@ -35,6 +93,10 @@ const GET_DRAFT_AUTHOR = gql`
   query draftAuthor($_id: ID!) {
     draft(_id: $_id) {
       _id
+      title
+      content
+      cover
+      originalPost
       author {
         _id
         email
@@ -69,19 +131,11 @@ const EditorHeader = ({ match, history }) => {
   const [ isAuthor, setIsAuthor ] = useState(false);
   const [ author, setAuthor ] = useState(null);
 
-  const [ publishDraft ] = useMutation(PUBLISH_DRAFT)
-  //   , {
-  //   update(cache, { data: publishDraft }) {
-  //     console.log(publishDraft)
-  //     cache.writeData({ data: {
-  //       me: {
-  //         ...publishDraft,
-  //       }
-  //     }})
-  //   }
-  // });
+  const [ publishDraft, { loading: publishDraftLoading } ] = useMutation(PUBLISH_DRAFT);
+  const [ updatePost, { loading: updatePostLoading } ] = useMutation(UPDATE_POST);
+  const [ editPost, { loading: editPostLoading } ] = useMutation(EDIT_POST);
 
-  const [ getDraftAuthor ] = useLazyQuery(GET_DRAFT_AUTHOR, {
+  const [ getDraftAuthor, { data: draft } ] = useLazyQuery(GET_DRAFT_AUTHOR, {
     onCompleted({ draft }) {
       if (draft) {
         setAuthor(draft.author)
@@ -112,30 +166,37 @@ const EditorHeader = ({ match, history }) => {
     }
   });
 
-  // const [ getUser ] = useLazyQuery(GET_LOGGED_USER, {
-  //   onCompleted({ me }) {
-  //     if (me) {
-  //       setIsAuthor(me.email === author.draft.author.email)
-  //     }
-  //   }
-  // });
-  // const { data: author } = useQuery(GET_DRAFT_AUTHOR, {
-  //   variables: {
-  //     _id: match.params.id
-  //   }, 
-  //   onCompleted() {
-  //     getUser()
-  //   }
-  // });
-
-  // useEffect(() => {
-  //   console.log(author)
-  // })
-
   const handlePublish = async () => {
     try {
       await publishDraft({ variables: { _id: match.params.id } });
       history.push(`/editor/post/${match.params.id}`)
+    } catch (error) {
+      toaster.negative(error.message)
+    }
+  }
+
+  const handleUpdate = async () => {
+    try {
+      await updatePost({ variables: { 
+        originalPost: draft.draft.originalPost,
+        draftId: draft.draft._id,
+        title: draft.draft.title,
+        content: draft.draft.content,
+        cover: draft.draft.cover,
+      } })
+
+      history.push(`/editor/post/${draft.draft.originalPost}`)
+    } catch (error) {
+      toaster.negative(error.message)
+    }
+  }
+
+  const handleEdit = async () => {
+    try {
+      const draftId = ObjectID();
+      await editPost({ variables: { postId: match.params.id, draftId } });
+
+      history.push(`/editor/draft/${draftId}`)
     } catch (error) {
       toaster.negative(error.message)
     }
@@ -156,35 +217,38 @@ const EditorHeader = ({ match, history }) => {
           }
         </div>
         {isAuthor && match.path === "/editor/draft/:id" ? 
+          (!draft.draft.originalPost ?
+            <Button
+              onClick={handlePublish}
+              overrides={{
+                BaseButton: {
+                  style: buttonStyle
+                }
+              }}
+              isLoading={publishDraftLoading}
+            >
+              Publish
+            </Button> :
+            <Button
+              onClick={handleUpdate}
+              overrides={{
+                BaseButton: {
+                  style: buttonStyle
+                }
+              }}
+              isLoading={updatePostLoading}
+            >
+              Update
+            </Button>
+          ) : 
           <Button
-            onClick={handlePublish}
+            onClick={handleEdit}
             overrides={{
               BaseButton: {
-                style: {
-                  height: '30px',
-                  paddingTop: '5px',
-                  paddingRight: '10px',
-                  paddingBottom: '5px',
-                  paddingLeft: '10px',
-                }
+                style: buttonStyle
               }
             }}
-          >
-            Publish
-          </Button> : 
-          <Button
-            onClick={() => alert("click")}
-            overrides={{
-              BaseButton: {
-                style: {
-                  height: '30px',
-                  paddingTop: '5px',
-                  paddingRight: '10px',
-                  paddingBottom: '5px',
-                  paddingLeft: '10px',
-                }
-              }
-            }}
+            isLoading={editPostLoading}
           >
             Edit
           </Button>
@@ -192,6 +256,14 @@ const EditorHeader = ({ match, history }) => {
       </div> 
     </ToasterContainer>
   )
+}
+
+const buttonStyle = {
+  height: '30px',
+  paddingTop: '5px',
+  paddingRight: '10px',
+  paddingBottom: '5px',
+  paddingLeft: '10px',
 }
 
 export default EditorHeader;

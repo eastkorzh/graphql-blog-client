@@ -28,6 +28,7 @@ const GET_USER_EDITOR = gql`
         date
         content
         cover
+        originalPost
       }
     }
   }
@@ -67,6 +68,24 @@ const DELETE_DRAFT = gql`
     }
   }
 `
+const DELETE_POST = gql`
+  mutation deletePost(
+    $_id: ID!
+  ) {
+    deletePost(
+      _id: $_id
+    ) {
+      _id
+      posts {
+        _id
+        title
+        cover
+        content
+        date
+      }
+    }
+  }
+`
 
 const EditorMainMenu = ({ history }) => {
   const { data, client } = useQuery(GET_USER_EDITOR, {
@@ -86,7 +105,8 @@ const EditorMainMenu = ({ history }) => {
     }
   })
 
-  const [ deleteDraft ] = useMutation(DELETE_DRAFT)
+  const [ deleteDraft ] = useMutation(DELETE_DRAFT);
+  const [ deletePost ] = useMutation(DELETE_POST);
 
   const createPost = async () => {
     try {
@@ -121,6 +141,8 @@ const EditorMainMenu = ({ history }) => {
             }
           }
         });
+
+        await deletePost({ variables: { _id } });
       }
     } catch (error) {
       toaster.negative(error.message)
