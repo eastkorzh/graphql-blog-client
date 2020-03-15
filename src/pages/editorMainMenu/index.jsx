@@ -9,6 +9,7 @@ import { toaster, ToasterContainer, PLACEMENT } from "baseui/toast";
 import { Spinner } from "baseui/spinner";
 import DeleteAlt from 'baseui/icon/delete-alt'
 import HeaderBar from 'components/headerBar';
+import Footer from 'components/footer';
 import s from './styles.module.scss';
 
 const GET_USER_EDITOR = gql`
@@ -216,6 +217,7 @@ const EditorMainMenu = ({ history }) => {
           }
         </div>
       </div>
+      <Footer />
     </ToasterContainer>
   )
 }

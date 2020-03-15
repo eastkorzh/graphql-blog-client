@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useQuery } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
 import moment from 'moment';
 
+import Footer from 'components/footer';
 import { Avatar } from "baseui/avatar";
 import HeaderBar from 'components/headerBar';
 import s from './styles.module.scss';
@@ -58,6 +59,7 @@ const Home = ({ history }) => {
           })}
         </div>
       </div>
+      <Footer />
     </>
   )
 }

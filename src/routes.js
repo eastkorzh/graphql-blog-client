@@ -1,6 +1,5 @@
 import Home from 'pages/home';
 import Auth from 'pages/auth';
-import File from 'pages/file';
 import Editor from 'pages/editor';
 import EditorMainMenu from 'pages/editorMainMenu';
 import AccountSettings from './pages/accountSettings';
@@ -15,11 +14,6 @@ const routes = [
     path: '/auth',
     exact: true,
     component: Auth
-  },
-  {
-    path: '/file',
-    exact: true,
-    component: File
   },
   {
     path: '/editor',
