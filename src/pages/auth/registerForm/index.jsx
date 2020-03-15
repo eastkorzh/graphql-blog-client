@@ -70,9 +70,9 @@ const Register = ({ history }) => {
   }
 
   useEffect(() => {
-    if (data && data.reg.token) {
-      localStorage.token = data.reg.token;
-      localStorage.email = data.reg.email;
+    if (data && data.register && data.register.token) {
+      localStorage.token = data.register.token;
+      localStorage.email = data.register.email;
     
       history.push('/');
     };

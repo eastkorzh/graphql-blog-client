@@ -10,7 +10,8 @@ const getContinuousStyles = (selectionChange, articleState) => {
       
       if (j === spanIndex && i === lineIndex && !(p > firstSelected[0] && p === lastSelected[0])) {
         let hasStyles = false;
-
+        if (!lineStyles[j]) return;
+        
         for (let key in lineStyles[j].style) {
           const item = lineStyles[j].style[key];
           if (item !== '') hasStyles = true;
@@ -40,6 +41,7 @@ const getContinuousStyles = (selectionChange, articleState) => {
     const iterateOverLines = ({ firstSelectedLine, lastSelectedLine, firstSelectedSpan, lastSelectedSpan, p }) => {
       // iterate over text lines in one paragraph
       for (let i=firstSelectedLine; i<=lastSelectedLine; i+=2) {
+        if (!articleState.article[p].content[i]) break;
         const lineStyles = articleState.article[p].content[i].styles;
         
         if (!lineStyles) {
@@ -80,6 +82,7 @@ const getContinuousStyles = (selectionChange, articleState) => {
 
     // iterate over paragraphs
     for (let p=firstSelected[0]; p<=lastSelected[0]; p++) {
+      if (!articleState.article[p]) continue;
       const currentContent = articleState.article[p].content;
       if (!currentContent) continue;
 

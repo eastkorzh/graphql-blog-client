@@ -22,10 +22,12 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
 
     // if styles is already applied, remove it
     const ejectingStylesKey = Object.keys(ejectingStyles)[0];
-    if (selection.continuousStyles[ejectingStylesKey] === ejectingStyles[ejectingStylesKey]) {
+
+    if (selection.continuousStyles && selection.continuousStyles[ejectingStylesKey] === ejectingStyles[ejectingStylesKey]) {
       ejectingStyles[ejectingStylesKey] = '';
     }
-
+    // --------------------------------------
+    
     for (let i=selectedRange[0][0]; i<=selectedRange[1][0]; i++) {
       if (stateCopy.article[i].type !== 'text') continue;
       

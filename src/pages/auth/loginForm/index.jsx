@@ -17,9 +17,11 @@ const LOGIN = gql`
       email: $email
       password: $password
     ){
+      _id
       token
       email
       name
+      avatar
     }
   }
 `
