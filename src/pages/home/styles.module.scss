@@ -1,0 +1,65 @@
+@import 'styles/constants.scss';
+
+.container {
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1070px;
+  .postsGrid {
+    display: grid;
+    width: 100%;
+    justify-content: center;
+    grid-template-columns: repeat(auto-fill, 240px);
+    grid-gap: 16px;
+    padding: 25px;
+    .card {
+      cursor: pointer;
+      width: 240px;
+      height: 300px;
+      border-radius: 10px;
+      background: rgb(41, 41, 41);
+      color: $white;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px;
+      overflow: hidden;
+      transition: box-shadow 300ms;
+      &:hover {
+        box-shadow: 0 0 16px rgba(255, 255, 255, .12);
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        .date, .delete {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(41, 41, 41, .7);
+          padding: 3px;
+          border-radius: 5px;
+        }
+        .date {
+          padding: 3px 5px;
+        }
+      }
+      .bottom {
+        h4 {
+          font-size: 20px;
+          max-height: 88px;
+          line-height: 1.2;
+          margin-bottom: 6px;
+        }
+        .author {
+          display: flex;
+          align-items: center;
+          font-size: 14px;
+          .name {
+            margin-left: 8px;
+          }
+        }
+      }
+    }
+  }
+}

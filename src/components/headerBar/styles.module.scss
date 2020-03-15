@@ -1,18 +1,18 @@
 .container {
   width: 100vw;
   height: 80px;
-  padding: 0 15px;
   background: #1E1E1E;
   .content {
     margin: 0 auto;
     height: 100%;
-    max-width: 1070px;
+    max-width: 1062px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     .logo {
       font-size: 26px;
       color: #D9D9A8;
+      padding-left: 25px;
       span {
         color: #4EC9B0;
         &:last-child {

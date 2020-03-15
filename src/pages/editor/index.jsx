@@ -110,7 +110,7 @@ const Editor = ({ match, history }) => {
     if (match.path === "/editor/draft/:id") {
       getDraft({ variables: { _id }})
     }
-    if (match.path === "/editor/post/:id") {
+    if (match.path === "/editor/post/:id" || match.path === '/post/:id') {
       getPost({ variables: { _id }});
     }
   }, [])
@@ -185,7 +185,7 @@ const Editor = ({ match, history }) => {
   }, [articleState, ignoreDraftUpdate])
   
   useEffect(() => {
-    if (articleState && articleState.caretPosition) {
+    if (articleState && articleState.caretPosition && editingMode) {
       const { nodeAddress, offset, selectedRange } = articleState.caretPosition;
       let caretNode = null;
       

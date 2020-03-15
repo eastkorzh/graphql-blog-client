@@ -205,7 +205,7 @@ const EditorMainMenu = ({ history }) => {
           <h3>Posts</h3>
           { data ?
             <div className={s.posts}>
-              { data.me.posts ?
+              { data.me.posts && data.me.posts.length ?
                 data.me.posts
                   .sort((a, b) => parseInt(b.date) - parseInt(a.date))
                   .map((item) => <Post key={item._id} item={item} isDraft={false}/> ) :

@@ -37,6 +37,11 @@ const routes = [
     component: Editor,
   },
   {
+    path: '/post/:id',
+    exact: true,
+    component: Editor,
+  },
+  {
     path: '/account',
     exact: true,
     component: AccountSettings

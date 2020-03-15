@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useMutation, useQuery, useLazyQuery } from '@apollo/react-hooks';
 import ObjectID from 'utils/ObjectID';
 
@@ -138,22 +138,22 @@ const EditorHeader = ({ match, history }) => {
   const [ getDraftAuthor, { data: draft } ] = useLazyQuery(GET_DRAFT_AUTHOR, {
     onCompleted({ draft }) {
       if (draft) {
-        setAuthor(draft.author)
-        setIsAuthor(draft.author._id === loggedUser.me._id)
+        setAuthor(draft.author);
+        setIsAuthor(draft.author._id === loggedUser.me._id);
       }
     }
   });
   const [ getPostAuthor ] = useLazyQuery(GET_POST_AUTHOR, {
     onCompleted({ post }) {
       if (post) {
-        setAuthor(post.author)
-        setIsAuthor(post.author._id === loggedUser.me._id)
+        setAuthor(post.author);
+        setIsAuthor(post.author._id === loggedUser.me._id);
       }
     }
   });
   const { data: loggedUser } = useQuery(GET_LOGGED_USER, {
     onCompleted() {
-      if (match.path === '/editor/post/:id') {
+      if (match.path === '/editor/post/:id' || match.path === '/post/:id') {
         getPostAuthor({ variables: {
           _id: match.params.id,
         }})
@@ -206,7 +206,11 @@ const EditorHeader = ({ match, history }) => {
     <ToasterContainer placement={PLACEMENT.bottomRight} >
       <div className={s.container}>
         <div className={s.left}>
-          <div className={s.back} onClick={() => history.push('/editor')}>
+          <div className={s.back} onClick={() => {
+            if (match.path === '/editor/post/:id') {
+              history.push('/editor')
+            } else history.goBack();
+          }}>
             <ArrowLeft size={50}/>
           </div>
           {author &&
@@ -216,7 +220,7 @@ const EditorHeader = ({ match, history }) => {
             </div>
           }
         </div>
-        {isAuthor && match.path === "/editor/draft/:id" ? 
+        {isAuthor && (match.path === "/editor/draft/:id" ? 
           (!draft.draft.originalPost ?
             <Button
               onClick={handlePublish}
@@ -252,7 +256,7 @@ const EditorHeader = ({ match, history }) => {
           >
             Edit
           </Button>
-        }
+        )}
       </div> 
     </ToasterContainer>
   )
