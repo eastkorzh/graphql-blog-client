@@ -15,7 +15,7 @@ import history from "./history";
 import 'styles/index.css';
 import theme from 'styles/theme';
 
-const aploadLink = createUploadLink({ uri: `http://localhost:${process.env.REACT_APP_PORT || 4000}/` });
+const aploadLink = createUploadLink({ uri: `${process.env.REACT_APP_URI}` });
 
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem('token');
