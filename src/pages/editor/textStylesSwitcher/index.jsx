@@ -206,10 +206,11 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
 
   useEffect(() => {
     const throttledSelectionChange = throttle((articleState) => onSelectionChange(articleState), 300);
-
-    document.addEventListener('selectionchange', () => throttledSelectionChange(articleState));
+    const res = () => throttledSelectionChange(articleState);
+    
+    document.addEventListener('selectionchange', res);
     return () => {
-      document.removeEventListener('selectionchange', () => throttledSelectionChange(articleState));
+      document.removeEventListener('selectionchange', res);
     }
   }, [articleState])
 
