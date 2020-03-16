@@ -141,15 +141,17 @@ const EditorHeader = ({ match, history }) => {
         setAuthor(draft.author);
         setIsAuthor(draft.author._id === loggedUser.me._id);
       }
-    }
+    },
   });
   const [ getPostAuthor ] = useLazyQuery(GET_POST_AUTHOR, {
     onCompleted({ post }) {
       if (post) {
         setAuthor(post.author);
-        setIsAuthor(post.author._id === loggedUser.me._id);
+        if (loggedUser && loggedUser.me) {
+          setIsAuthor(post.author._id === loggedUser.me._id);
+        }
       }
-    }
+    },
   });
   const { data: loggedUser } = useQuery(GET_LOGGED_USER, {
     onCompleted() {
@@ -160,6 +162,13 @@ const EditorHeader = ({ match, history }) => {
       }
       if (match.path === '/editor/draft/:id') {
         getDraftAuthor({ variables: {
+          _id: match.params.id,
+        }})
+      }
+    }, 
+    onError() {
+      if (match.path === '/editor/post/:id' || match.path === '/post/:id') {
+        getPostAuthor({ variables: {
           _id: match.params.id,
         }})
       }

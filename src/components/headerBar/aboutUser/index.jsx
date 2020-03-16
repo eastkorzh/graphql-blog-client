@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@apollo/react-hooks';
+import { useLazyQuery } from '@apollo/react-hooks';
 import { gql } from 'apollo-boost';
 import { Button } from 'baseui/button';
 import { Avatar } from 'baseui/avatar';
@@ -22,12 +22,22 @@ const LOGGED_USER = gql`
 const AboutUser = () => {
   const [isExpended, setExpended] = useState(false);
 
-  const { data, loading, client } = useQuery(LOGGED_USER);
+  const [ getLoggedUser, { data, loading, error, client, refetch }] = useLazyQuery(LOGGED_USER, {
+    onError({ message }) {
+      console.log(message)
+    }
+  });
 
   const logout = () => {
     localStorage.token = '';
     client.writeData({ data: { me: null } })
   }
+
+  useEffect(() => {
+    if (localStorage.token) getLoggedUser();
+    
+    if (data && !data.me) refetch();
+  }, [])
 
   return (
     <>
@@ -74,23 +84,12 @@ const AboutUser = () => {
                   BaseButton: {
                     style: {
                       ...ButtonStyle,
-                      marginRight: '10px',
+                      marginRight: '25px',
                     }
                   }
                 }}
               >
-                Login
-              </Button>
-            </Link>
-            <Link to='/auth'>
-              <Button
-                overrides={{
-                  BaseButton: {
-                    style: ButtonStyle
-                  }
-                }}
-              >
-                Register
+                Auth
               </Button>
             </Link>
           </div>

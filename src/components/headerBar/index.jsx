@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import AboutUser from './aboutUser';
 
@@ -9,7 +9,6 @@ const HeaderBar = () => {
     <nav className={s.navs}>
       <Link to='/'>Feed</Link>
       <Link to='/editor'>Editor</Link>
-      {/* <Link to='/editor'>Make Post</Link> */}
     </nav>
   )
 

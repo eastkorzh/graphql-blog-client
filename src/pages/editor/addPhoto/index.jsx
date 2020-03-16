@@ -61,6 +61,12 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
     if (selection && selection.nodeAddress) {
       const { nodeAddress: nA } = selection;
       
+      if (nA.join('') === '000') {
+        setEmptyNodeTop(null);
+        setNodeAddress(null);
+        return;
+      }
+
       if (articleState && articleState.article && articleRef.current) {
         const node = articleState.article[nA[0]];
 
@@ -98,6 +104,12 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
       setNodeAddress(null);
       return;
     };
+
+    if (anchorNode.parentNode.dataset.spanindex === '0,0,0') {
+      setEmptyNodeTop(null);
+      setNodeAddress(null);
+      return;
+    }
 
     setEmptyNodeTop(anchorNode.parentNode.getBoundingClientRect().top - articleRef.current.parentNode.getBoundingClientRect().top - 2);
   }

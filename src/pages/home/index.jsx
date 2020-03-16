@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
 import moment from 'moment';
@@ -25,7 +25,15 @@ const GET_POSTS = gql`
 `
 
 const Home = ({ history }) => {
-  const { data } = useQuery(GET_POSTS);
+  const { data, refetch } = useQuery(GET_POSTS, {
+    onError({ message }) {
+      console.log('home page: ', message)
+    }
+  });
+
+  useEffect(() => {
+    if (data) refetch();
+  }, [])
 
   return (
     <>
