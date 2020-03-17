@@ -31,7 +31,6 @@ const selectionChange = () => {
 
   if (anchorNode === null || !anchorNode.data || focusNode === null || !focusNode.data) return;
 
-  
   if (anchorNode.parentNode.localName === 'h1') {
     return {
       offset: anchorOffset < focusOffset ? anchorOffset : focusOffset,
@@ -42,6 +41,12 @@ const selectionChange = () => {
   }
   
   if (anchorNode.parentNode.localName !== 'span') return;
+
+  // prevent bug when getSelection() browser method returns incorrect focusNode
+  if (anchorOffset === 0 && focusOffset === 0 && anchorNode.data !== focusNode.data) {
+    focusNode = focusNode.parentNode.previousSibling.firstChild;
+    focusOffset = focusNode.data.length;
+  }
   
   const { nodeWithDataset: anchorWithRootDataset } = getNodeWithDataset(anchorNode);
   const { nodeWithDataset: focusWithRootDataset } = getNodeWithDataset(focusNode);

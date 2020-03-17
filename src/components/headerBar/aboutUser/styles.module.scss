@@ -13,32 +13,81 @@
       font-size: 18px;
     }
   }
-  &:hover {
-    .expendedInfo {
-      position: absolute;
-      top: -15px;
-      left: 0px;
-      background: #353535;
-      padding: 15px 0px 0px 0px;
-      border-radius: 5px;
-      .buttons {
-        margin-top: 15px;
-        a {
-          &:last-child .item {
-            border-radius: 0 0 5px 5px;
-          }
-        }
-        .item {
-          border-top: 1px solid #5c5c5c;
-          padding: 0 15px;
-          cursor: pointer;
-          &:hover {
-            background-color: #5c5c5c;
-          }
+  .expendedInfo {
+    position: absolute;
+    display: none;
+    top: -15px;
+    right: 0px;
+    background: #353535;
+    padding: 15px 0px 0px 0px;
+    border-radius: 5px;
+    .expended {
+      display: flex;
+      align-items: center;
+      padding: 0px 15px;
+      .expendedName {
+        margin-right: 10px;
+        font-weight: 800;
+        font-size: 18px;
+      }
+      & ~ div {
+        line-height: 40px;
+      }
+    }
+    .buttons {
+      margin-top: 15px;
+      a {
+        &:last-child .item {
+          border-radius: 0 0 5px 5px;
         }
       }
-      .collapsed ~ div {
-        line-height: 40px;
+      .item {
+        border-top: 1px solid #5c5c5c;
+        padding: 0 15px;
+        cursor: pointer;
+        &:hover {
+          background-color: #5c5c5c;
+        }
+      }
+    }
+  }
+  &:hover {
+    .expendedInfo {
+      display: block;
+    }
+  }
+}
+
+@media (max-width: 1062px) {
+  .aboutUser {
+    position: absolute;
+    right: 0;
+    .collapsed {
+      .name {
+        display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 575px) {
+  .aboutUser {
+    margin-right: 5px;
+    font-size: 14px;
+    .collapsed {
+      padding: 0 10px;
+      .name {
+        font-size: 14px;
+      }
+    }
+    .expendedInfo {
+      .expended ~ div {
+        line-height: 30px;
+      }
+      .buttons {
+        .item {
+          padding: 0 10px;
+        }
       }
     }
   }

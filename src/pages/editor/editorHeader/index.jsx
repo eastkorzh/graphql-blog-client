@@ -220,11 +220,37 @@ const EditorHeader = ({ match, history }) => {
               history.push('/editor')
             } else history.goBack();
           }}>
-            <ArrowLeft size={50}/>
+            <ArrowLeft 
+              size={50} 
+              overrides={{
+                Svg: {
+                  style: {
+                    '@media (max-width: 550px': {
+                      width: '35px',
+                      height: '35px'
+                    }
+                  }
+                }
+              }}
+            />
           </div>
           {author &&
             <div className={s.author}>
-              <Avatar size={'50px'} name={author.name} src={author.avatar} />
+              <Avatar 
+                size={'50px'} 
+                name={author.name} 
+                src={author.avatar} 
+                overrides={{
+                  Avatar: {
+                    style: {
+                      '@media (max-width: 550px': {
+                        width: '35px',
+                        height: '35px'
+                      }
+                    }
+                  }
+                }}
+              />
               <div className={s.name}>{author.name}</div>
             </div>
           }

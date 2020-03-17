@@ -149,7 +149,7 @@ const EditorMainMenu = ({ history }) => {
       toaster.negative(error.message)
     }
   }
-
+  
   const Post = ({ item, isDraft }) => {
     return (
       <div 
@@ -184,31 +184,20 @@ const EditorMainMenu = ({ history }) => {
     )
   }
 
-  const EmptyCard = () => {
-    return (
-      <div className={s.emptyCard} ></div>
-    )
-  }
-
   return (
-    <ToasterContainer placement={PLACEMENT.bottomRight} >
+    <ToasterContainer placement={PLACEMENT.bottomRight}>
       <HeaderBar />
       <div className={s.content}>
         <div className={s.postsWrapper}>
           <h3>Drafts</h3>
           { data && data.me ?
-            <div className={s.posts} style={data.me.drafts.length < 3 ? {height: '310px', overflow: 'hidden'} : {}} >
+            <div className={s.posts} style={!data.me.drafts.length ? {display: 'flex'} : {}}>
               <div onClick={createPost} className={cx({ [s.card]: true, [s.newPost]: true })}>
                 {creatingDraft ? <Spinner color="#e2e2e2" size={80}/> : '+' }
               </div>
               {data.me.drafts
                 .sort((a, b) => parseInt(b.date) - parseInt(a.date))
                 .map((item) => <Post key={item._id} item={item} isDraft={true}/> )}
-              {new Array(data.me.drafts.length < 3 ? 3 - data.me.drafts.length : 0).fill(0).map((i, index) => {
-                return (
-                  <EmptyCard key={index} />
-                )
-              })}
             </div> :
             <Spinner color="#e2e2e2" size={60}/>
           }
@@ -216,19 +205,13 @@ const EditorMainMenu = ({ history }) => {
         <div className={s.postsWrapper}>
           <h3>Posts</h3>
           { data && data.me ?
-            <div className={s.posts} style={!data.me.posts.length ? {display: 'flex'} : 
-              (data.me.posts.length < 3 ? {height: '310px', overflow: 'hidden'} : {})} >
+            <div className={s.posts} style={!data.me.posts.length ? {display: 'flex'} : {}} >
               { data.me.posts && data.me.posts.length ?
                 data.me.posts
                   .sort((a, b) => parseInt(b.date) - parseInt(a.date))
                   .map((item) => <Post key={item._id} item={item} isDraft={false}/> ) :
                 <div>You have not posted yet.</div>
               }
-              {new Array(data.me.posts.length < 3 &&  data.me.posts.length ? 4 - data.me.posts.length : 0).fill(0).map((i, index) => {
-                return (
-                  <EmptyCard key={index} />
-                )
-              })}
             </div> :
             <Spinner color="#e2e2e2" size={60}/>
           }

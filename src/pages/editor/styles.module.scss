@@ -8,8 +8,9 @@
   font-size: 17px;
   .editor {
     position: relative;
-    max-width: 600px;
+    max-width: 650px;
     margin: 0 auto;
+    padding: 0 25px;
     .emptyH1:before {
       content: attr(data-placeholder);
       position: absolute;

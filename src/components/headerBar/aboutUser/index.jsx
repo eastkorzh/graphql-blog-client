@@ -20,49 +20,64 @@ const LOGGED_USER = gql`
 `
 
 const AboutUser = () => {
-  const [isExpended, setExpended] = useState(false);
-
-  const [ getLoggedUser, { data, loading, error, client, refetch }] = useLazyQuery(LOGGED_USER, {
+  const [ getLoggedUser, { data, loading, client, refetch }] = useLazyQuery(LOGGED_USER, {
     onError({ message }) {
-      console.log(message)
+      console.log(message);
     }
   });
 
   const logout = () => {
     localStorage.token = '';
-    client.writeData({ data: { me: null } })
+    client.writeData({ data: { me: null } });
   }
 
   useEffect(() => {
     if (localStorage.token) getLoggedUser();
-    
-    if (data && !data.me) refetch();
   }, [])
+
+  useEffect(() => {
+    if (data && !data.me) refetch();
+  }, [refetch])
 
   return (
     <>
       {loading ? <Spinner color="#e2e2e2" size={40}/> :
         ((data && data.me) ?
-          <div 
-            className={s.aboutUser}
-            onMouseEnter={() => setExpended(true)}
-            onMouseLeave={() => setExpended(false)}
-          >
+          <div className={s.aboutUser}>
             <div className={s.collapsed}>
               <div className={s.name}>{data.me.name}</div>
               <Avatar 
                 name={data.me.name}
-                size='scale1000'
+                size={'40px'}
+                overrides={{
+                  Avatar: {
+                    style: {
+                      '@media (max-width: 435px': {
+                        width: '30px',
+                        height: '30px'
+                      }
+                    }
+                  }
+                }}
                 src={data.me.avatar}
               />
             </div>
-            {isExpended &&
               <div className={s.expendedInfo}>
-                <div className={s.collapsed}>
-                  <div className={s.name}>{data.me.name}</div>
+                <div className={s.expended}>
+                  <div className={s.expendedName}>{data.me.name}</div>
                   <Avatar 
                     name={data.me.name}
-                    size='scale1000'
+                    size={'40px'}
+                    overrides={{
+                      Avatar: {
+                        style: {
+                          '@media (max-width: 435px': {
+                            width: '30px',
+                            height: '30px'
+                          }
+                        }
+                      }
+                    }}
                     src={data.me.avatar}
                   />
                 </div>
@@ -75,7 +90,6 @@ const AboutUser = () => {
                   </Link>
                 </div>
               </div>
-            }
           </div> :
           <div>
             <Link to='/auth'>

@@ -175,12 +175,12 @@ const Editor = ({ match, history }) => {
   ), [])
 
   useEffect(() => {
-    if (articleState && !ignoreDraftUpdate) {
+    if (articleState) {
       const articleStateJSON = JSON.stringify(articleState);
       const articleStateCopy = JSON.parse(articleStateJSON);
 
       throttledSetArticleHistory(articleStateCopy, articleHistory);
-      throttledUpdateDraft(match.params.id, articleStateJSON, articleStateCopy);
+      if (!ignoreDraftUpdate) throttledUpdateDraft(match.params.id, articleStateJSON, articleStateCopy);
     }
   }, [articleState, ignoreDraftUpdate])
   
@@ -216,7 +216,7 @@ const Editor = ({ match, history }) => {
             .childNodes[nodeAddress[1]]
             .childNodes[nodeAddress[2]]
         }
-
+        
         caretNode && document.getSelection().collapse(caretNode.lastChild, offset);
       }    
     }
@@ -557,6 +557,7 @@ const Editor = ({ match, history }) => {
               suppressContentEditableWarning={true}
               ref={articleRef}
               onPaste={e => paste(e)}
+              style={editingMode ? {marginBottom: '40vh'} : {}}
             >
               {(articleState && !draftLoading) && articleState.article.map((item, index) => {
                 if (item.type === 'img') {
