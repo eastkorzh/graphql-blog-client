@@ -15,6 +15,7 @@ const GET_POSTS = gql`
       title
       cover
       date
+      pinned
       author {
         _id
         name
@@ -40,7 +41,7 @@ const Home = ({ history }) => {
       <HeaderBar />
       <div className={s.container}>
         <div className={s.postsGrid}>
-          {data && data.posts.map(item => {
+          {data && [...data.posts].sort((a) => a.pinned ? -1 : 1).map(item => {
             return (
               <div 
                 className={s.card} 
@@ -54,6 +55,9 @@ const Home = ({ history }) => {
               >
                 <div className={s.top}>
                   <div className={s.date}>{moment(item.date, 'x').format("DD-MM-YYYY")}</div>
+                  {item.pinned &&
+                    <div className={s.pinned}>🔥</div>
+                  }
                 </div>
                 <div className={s.bottom}>
                   <h4>{item.title}</h4>
