@@ -263,6 +263,10 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
     ejectStyles(articleState, selection, { textDecoration: 'line-through'})
   }
 
+  const h3 = () => {
+    ejectStyles(articleState, selection, { fontSize: '24px' })
+  }
+
   return (
     <>
       {coords &&
@@ -278,6 +282,9 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
           </button>
           <button onClick={lineThrough} style={showActive(selection, { textDecoration: 'line-through' })} >
             S
+          </button>
+          <button onClick={h3} style={showActive(selection, { fontSize: '24px' })} >
+            h3
           </button>
         </div>
       }
