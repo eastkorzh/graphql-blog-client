@@ -8,6 +8,7 @@ import { Button } from "baseui/button";
 import { toaster, ToasterContainer, PLACEMENT } from "baseui/toast";
 import s from './styles.module.scss';
 import gql from 'graphql-tag';
+import { useEffect } from 'react';
 
 const PUBLISH_DRAFT = gql`
   mutation publishDraft(
@@ -216,8 +217,13 @@ const EditorHeader = ({ match, history }) => {
       <div className={s.container}>
         <div className={s.left}>
           <div className={s.back} onClick={() => {
+            if (match.path === '/post/:id') {
+              history.push('/');
+              return;
+            };
             if (match.path === '/editor/post/:id') {
               history.push('/editor')
+              return;
             } else history.goBack();
           }}>
             <ArrowLeft 
