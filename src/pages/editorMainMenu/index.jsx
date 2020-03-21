@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import gql from 'graphql-tag';
-import { useQuery, useMutation } from '@apollo/react-hooks';
+import { useLazyQuery, useMutation } from '@apollo/react-hooks';
 import cx from 'classnames';
 import moment from 'moment';
 import ObjectID from 'utils/ObjectID';
 
+import { Link } from 'react-router-dom';
+import { Button } from 'baseui/button';
 import { toaster, ToasterContainer, PLACEMENT } from "baseui/toast";
 import { Spinner } from "baseui/spinner";
 import DeleteAlt from 'baseui/icon/delete-alt'
@@ -89,11 +91,15 @@ const DELETE_POST = gql`
 `
 
 const EditorMainMenu = ({ history }) => {
-  const { data, client } = useQuery(GET_USER_EDITOR, {
+  const [ getUserEditor, { data, client }] = useLazyQuery(GET_USER_EDITOR, {
     onError({ message }) {
       toaster.negative(message)
     }
   });
+
+  useEffect(() => {
+    if (localStorage.token) getUserEditor();
+  }, [])
 
   const [ createDraft, { loading: creatingDraft }] = useMutation(CREATE_DRAFT, {
     update(cache, { data: { createDraft } }) {
@@ -187,39 +193,65 @@ const EditorMainMenu = ({ history }) => {
   return (
     <ToasterContainer placement={PLACEMENT.bottomRight}>
       <HeaderBar />
-      <div className={s.content}>
-        <div className={s.postsWrapper}>
-          <h3>Drafts</h3>
-          { data && data.me ?
-            <div className={s.posts} style={!data.me.drafts.length ? {display: 'flex'} : {}}>
-              <div onClick={createPost} className={cx({ [s.card]: true, [s.newPost]: true })}>
-                {creatingDraft ? <Spinner color="#e2e2e2" size={80}/> : '+' }
-              </div>
-              {data.me.drafts
-                .sort((a, b) => parseInt(b.date) - parseInt(a.date))
-                .map((item) => <Post key={item._id} item={item} isDraft={true}/> )}
-            </div> :
-            <Spinner color="#e2e2e2" size={60}/>
-          }
-        </div>
-        <div className={s.postsWrapper}>
-          <h3>Posts</h3>
-          { data && data.me ?
-            <div className={s.posts} style={!data.me.posts.length ? {display: 'flex'} : {}} >
-              { data.me.posts && data.me.posts.length ?
-                data.me.posts
+      {localStorage.token ?
+        <div className={s.content}>
+          <div className={s.postsWrapper}>
+            <h3>Drafts</h3>
+            { data && data.me ?
+              <div className={s.posts} style={!data.me.drafts.length ? {display: 'flex'} : {}}>
+                <div onClick={createPost} className={cx({ [s.card]: true, [s.newPost]: true })}>
+                  {creatingDraft ? <Spinner color="#e2e2e2" size={80}/> : '+' }
+                </div>
+                {data.me.drafts
                   .sort((a, b) => parseInt(b.date) - parseInt(a.date))
-                  .map((item) => <Post key={item._id} item={item} isDraft={false}/> ) :
-                <div>You have not posted yet.</div>
-              }
-            </div> :
-            <Spinner color="#e2e2e2" size={60}/>
-          }
+                  .map((item) => <Post key={item._id} item={item} isDraft={true}/> )}
+              </div> :
+              <Spinner color="#e2e2e2" size={60}/>
+            }
+          </div>
+          <div className={s.postsWrapper}>
+            <h3>Posts</h3>
+            { data && data.me ?
+              <div className={s.posts} style={!data.me.posts.length ? {display: 'flex'} : {}} >
+                { data.me.posts && data.me.posts.length ?
+                  data.me.posts
+                    .sort((a, b) => parseInt(b.date) - parseInt(a.date))
+                    .map((item) => <Post key={item._id} item={item} isDraft={false}/> ) :
+                  <div>You have not posted yet.</div>
+                }
+              </div> :
+              <Spinner color="#e2e2e2" size={60}/>
+            }
+          </div>
+        </div> :
+        <div className={s.notLogged}>
+          <div>You must be logged in to create posts</div>
+            <Link to='/auth'>
+              <Button
+                overrides={{
+                  BaseButton: {
+                    style: {
+                      ...ButtonStyle,
+                      marginRight: '25px',
+                    }
+                  }
+                }}
+              >
+                Login / Register
+              </Button>
+            </Link>
         </div>
-      </div>
+      }
       <Footer />
     </ToasterContainer>
   )
+}
+
+const ButtonStyle = {
+  paddingTop: '10px',
+  paddingBottom: '10px',
+  fontWeight: '700',
+  marginTop: '30px',
 }
 
 export default EditorMainMenu;
