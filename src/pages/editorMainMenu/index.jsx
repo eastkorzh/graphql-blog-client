@@ -90,7 +90,7 @@ const DELETE_POST = gql`
   }
 `
 
-const EditorMainMenu = ({ history }) => {
+const EditorMainMenu = ({ history, match }) => {
   const [ getUserEditor, { data, client }] = useLazyQuery(GET_USER_EDITOR, {
     onError({ message }) {
       toaster.negative(message)
@@ -192,7 +192,7 @@ const EditorMainMenu = ({ history }) => {
 
   return (
     <ToasterContainer placement={PLACEMENT.bottomRight}>
-      <HeaderBar />
+      <HeaderBar match={match} />
       {localStorage.token ?
         <div className={s.content}>
           <div className={s.postsWrapper}>

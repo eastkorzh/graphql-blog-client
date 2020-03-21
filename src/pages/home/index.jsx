@@ -25,7 +25,7 @@ const GET_POSTS = gql`
   }
 `
 
-const Home = ({ history }) => {
+const Home = ({ history, match }) => {
   const { data, refetch } = useQuery(GET_POSTS, {
     onError({ message }) {
       console.log('home page: ', message)
@@ -38,7 +38,7 @@ const Home = ({ history }) => {
 
   return (
     <>
-      <HeaderBar />
+      <HeaderBar match={match} />
       <div className={s.container}>
         <div className={s.postsGrid}>
           {data && [...data.posts].sort((a) => a.pinned ? -1 : 1).map(item => {
