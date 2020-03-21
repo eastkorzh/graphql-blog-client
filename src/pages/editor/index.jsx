@@ -312,6 +312,20 @@ const Editor = ({ match, history }) => {
     if (ignoreDraftUpdate) setIgnoreDraftUpdate(false);
 
     const localName = e.target.localName;
+    
+    // Alt+Backspace
+    if (e.keyCode === 8 && (e.altKey || e.metaKey)) {
+      e.preventDefault()
+    }
+    // Ctrl+X
+    if (e.keyCode === 88 && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+    }
+
+    // Delete
+    if (e.keyCode === 46) {
+      e.preventDefault()
+    }
 
     // Ctrl+Z
     if (e.keyCode === 90 && (e.metaKey || e.ctrlKey)) {

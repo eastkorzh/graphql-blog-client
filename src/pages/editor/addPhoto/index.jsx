@@ -87,7 +87,9 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
 
   const onSelectionChange = () => {
     const anchorNode = document.getSelection().anchorNode;
-    
+
+    if (anchorNode && anchorNode.parentNode.localName === 'button') return;
+
     if (!anchorNode || !anchorNode.parentNode.dataset.spanindex) {
       setEmptyNodeTop(null);
       return;
@@ -111,7 +113,10 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
       return;
     }
 
-    setEmptyNodeTop(anchorNode.parentNode.getBoundingClientRect().top - articleRef.current.parentNode.getBoundingClientRect().top - 2);
+    if (anchorNode.parentNode.dataset.spanindex) {
+      setEmptyNodeTop(anchorNode.parentNode.getBoundingClientRect().top - articleRef.current.parentNode.getBoundingClientRect().top - 2);
+      setNodeAddress(anchorNode.parentNode.dataset.spanindex.split(',').map(item => parseInt(item)))
+    }
   }
 
   const uploadPhoto = async (photo) => {
@@ -127,7 +132,7 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
         article: [],
       }
 
-      for (let i=0; i<=stateCopy.article.length; i++) {
+      for (let i=0; i<stateCopy.article.length; i++) {
         const node = stateCopy.article[i];
         
         if (!node && i !== stateCopy.article.length) break;
@@ -141,6 +146,7 @@ const AddPhoto = ({ articleState, setArticleState, articleRef }) => {
               styles: null,
             }],
           });
+          newState.article.push(node);
           newState.caretPosition = {
             nodeAddress: [i, 0, 0],
             offset: 1,
