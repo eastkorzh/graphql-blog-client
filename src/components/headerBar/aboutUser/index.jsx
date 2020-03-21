@@ -103,7 +103,7 @@ const AboutUser = () => {
                   }
                 }}
               >
-                Auth
+                <img className={s.loginImage} src={require('img/login.svg')} alt="Login"/>
               </Button>
             </Link>
           </div>
@@ -114,8 +114,8 @@ const AboutUser = () => {
 }
 
 const ButtonStyle = {
-  paddingTop: '10px',
-  paddingBottom: '10px',
+  paddingTop: '7px',
+  paddingBottom: '7px',
   fontWeight: '700',
 }
 
