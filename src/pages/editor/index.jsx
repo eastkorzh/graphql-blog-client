@@ -5,7 +5,6 @@ import { useLazyQuery, useMutation } from '@apollo/react-hooks';
 
 import { br, zws } from './constants';
 import selectionChange from './utils/selectionChange';
-import initialState1 from './initialState1';
 import throttle from 'utils/throttle';
 
 import insertText from './insertText';
@@ -42,6 +41,7 @@ const GET_POST = gql`
   query Post($_id: ID!) {
     post(_id: $_id) {
       _id
+      title
       content
     }
   }
@@ -117,6 +117,8 @@ const Editor = ({ match, history }) => {
 
   useEffect(() => {
     if (postContent) {
+      document.title = postContent.post.title;
+
       const content = JSON.parse(postContent.post.content);
 
       if (typeof content === 'object' && content !== null) {
@@ -128,6 +130,8 @@ const Editor = ({ match, history }) => {
 
   useEffect(() => {
     if (draftContent && ignoreCacheUpdate) {
+      document.title = draftContent.draft.title || 'New draft';
+
       const content = JSON.parse(draftContent.draft.content);
 
       if (typeof content === 'object' && content !== null) {

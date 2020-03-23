@@ -98,6 +98,7 @@ const EditorMainMenu = ({ history, match }) => {
   });
 
   useEffect(() => {
+    document.title = 'Editor | console.blog';
     if (localStorage.token) getUserEditor();
   }, [])
 

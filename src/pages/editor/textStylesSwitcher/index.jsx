@@ -5,7 +5,6 @@ import throttle from 'utils/throttle';
 import selectionChange from 'pages/editor/utils/selectionChange';
 import updateNode from './updateNode';
 import getContinuousStyles from './getContinuousStyles';
-import concatSameStyles from './concatSameStyles';
 
 import s from './styles.module.scss';
 
@@ -26,7 +25,6 @@ const TextStylesSwitcher = ({ articleState, setArticleState, articleRef }) => {
     if (selection.continuousStyles && selection.continuousStyles[ejectingStylesKey] === ejectingStyles[ejectingStylesKey]) {
       ejectingStyles[ejectingStylesKey] = '';
     }
-    // --------------------------------------
     
     for (let i=selectedRange[0][0]; i<=selectedRange[1][0]; i++) {
       if (stateCopy.article[i].type !== 'text') continue;

@@ -33,6 +33,7 @@ const Home = ({ history, match }) => {
   });
 
   useEffect(() => {
+    document.title = 'Feed | console.blog';
     if (data) refetch();
   }, [])
 

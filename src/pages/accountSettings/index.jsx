@@ -85,6 +85,10 @@ const AccountSettings = ({ history }) => {
   });
 
   useEffect(() => {
+    document.title = 'Account Settings | console.blog'
+  }, [])
+
+  useEffect(() => {
     if (userData) {
       setValue({
         ...value,

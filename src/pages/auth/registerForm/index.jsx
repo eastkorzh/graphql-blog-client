@@ -78,6 +78,10 @@ const Register = ({ history }) => {
     };
   }, [data])
 
+  useEffect(() => {
+    document.title = 'Registration | console.blog'
+  }, [])
+
   return (
     <>
       <form className={s.form} onSubmit={(e) => {

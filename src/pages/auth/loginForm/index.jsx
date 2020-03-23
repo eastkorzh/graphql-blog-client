@@ -71,6 +71,10 @@ const LoginForm = ({ history }) => {
     };
   }, [data])
 
+  useEffect(() => {
+    document.title = 'Login | console.blog'
+  }, [])
+
   return(
     <>
       <form 
